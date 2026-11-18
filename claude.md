@@ -180,6 +180,12 @@ The `actions` column is a registry in `src/actions/registry.ts`, the same shape 
 - Light and dark mode following the system setting.
 - Empty, loading, error and "token lacks permission for this field" states for every column.
 
+## Deployment
+
+- Site: GitHub Pages via `.github/workflows/pages.yml`; build-time settings from repo variables `PRBOARD_OAUTH_CLIENT_ID`, `PRBOARD_APP_SLUG`, `PRBOARD_OAUTH_EXCHANGE_URL`.
+- Token exchange: Cloudflare Worker `prboard-auth` on the 17 Things account, custom domain `prboard-auth.17things.co.uk`, deployed by `.github/workflows/worker.yml` (secret `CLOUDFLARE_API_TOKEN` in environment `cloudflare`, variable `CLOUDFLARE_ACCOUNT_ID`). The GitHub App client secret lives only in the Worker (`wrangler secret`).
+- The README "Deploy" section is the source of truth for settings; keep it in step with the workflows.
+
 ## Milestones
 
 1. **Skeleton:** Vite + Svelte 5 + TS, token screen, `viewer` check, one hard-coded view rendering `title`, `autoMerge`, `checks` from a real search query.

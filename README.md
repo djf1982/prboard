@@ -130,6 +130,44 @@ views:
 - **Where configs come from:** the built-in default, this browser (localStorage), an imported file, a shared link (`#config=…`), or a repository file (`.github/prboard.yml`, read with your token). The footer shows the active source. A config from a link, file or repo is not saved until you click **Keep this config**.
 - Errors name the path, for example `views[1].columns[3]: unknown field 'automerge' — did you mean 'autoMerge'?`
 
+## Deploy
+
+prboard has three parts. Each deploys on its own.
+
+| Part | Where | Deploys |
+| --- | --- | --- |
+| Static site | GitHub Pages, `https://djf1982.github.io/prboard/` | `.github/workflows/pages.yml` on every push to `main` |
+| Token exchange (`worker/`) | Cloudflare Worker, `https://prboard-auth.17things.co.uk` | `.github/workflows/worker.yml` when `worker/` changes on `main`, or by hand |
+| GitHub App | [prboard-17things](https://github.com/apps/prboard-17things) | Settings on GitHub; no code |
+
+CI (`.github/workflows/ci.yml`) runs type checks, tests, the build, a schema check and `npm audit` on every push and pull request.
+
+### Repository settings
+
+| Name | Kind | Used by | Value |
+| --- | --- | --- | --- |
+| `PRBOARD_OAUTH_CLIENT_ID` | variable | Pages build | The GitHub App's client ID |
+| `PRBOARD_APP_SLUG` | variable | Pages build | The GitHub App's slug, for the "Install on an org" link |
+| `PRBOARD_OAUTH_EXCHANGE_URL` | variable | Pages build (and CSP) | The Worker's URL |
+| `CLOUDFLARE_ACCOUNT_ID` | variable | Worker deploy | Cloudflare account that hosts the Worker |
+| `CLOUDFLARE_API_TOKEN` | secret, environment `cloudflare` | Worker deploy | Cloudflare API token from the "Edit Cloudflare Workers" template, limited to that account and zone |
+
+The GitHub App's **client secret** is not in GitHub. It is a Worker secret only:
+`npx wrangler secret put GITHUB_CLIENT_SECRET` (run in `worker/`).
+
+If the three `PRBOARD_*` variables are empty, the site builds without "Sign in with GitHub" and works with personal access tokens only.
+
+### Run your own copy
+
+1. Fork the repo and enable GitHub Pages with **GitHub Actions** as the source.
+2. Create a GitHub App: callback URL = your Pages URL; "Expire user authorization tokens" on; webhooks off; repository permissions Checks, Commit statuses: read; Contents, Pull requests, Merge queues: read and write; organisation permission Members: read; installable on any account.
+3. In `worker/wrangler.toml`, set `GITHUB_CLIENT_ID`, `ALLOWED_ORIGINS` (your Pages origin), `REDIRECT_URIS` (your Pages URL) and the route (or use `workers_dev = true`).
+4. Deploy the Worker once by hand (`npx wrangler login`, `npx wrangler secret put GITHUB_CLIENT_SECRET`, `npx wrangler deploy`), or add the Cloudflare settings above and run the workflow.
+5. Set the `PRBOARD_*` variables and push to `main`. The Pages workflow rebuilds with sign-in.
+6. Install the app on each organisation you want to see.
+
+To skip the Worker and the app entirely, do step 1 only: the site works with personal access tokens.
+
 ## GitHub Enterprise Server
 
 Set the GraphQL API URL on the sign-in screen (`https://HOST/api/graphql`). Build with your host in the CSP:
@@ -148,6 +186,8 @@ npm run check    # type check (svelte-check)
 npm run build    # production build in dist/, with the CSP
 npm run schema   # regenerate public/prboard.schema.json
 ```
+
+The Worker runs locally with `cd worker && npx wrangler dev`. Its tests are in `tests/worker.test.ts`.
 
 Stack: TypeScript, Svelte 5, Vite, TanStack Table v9, zod, yaml. See [CONTRIBUTING.md](CONTRIBUTING.md) to add a field or an action.
 
