@@ -12,7 +12,8 @@ on a PR without leaving the table.
 
 ## Your token stays with you (trust and privacy)
 
-- **prboard has no backend.** It is a static site. Your browser sends API calls straight to GitHub.
+- **prboard has no backend for your data.** It is a static site. Your browser sends API calls straight to GitHub.
+- **"Sign in with GitHub" uses a tiny token-exchange service** (`worker/`), because GitHub's token endpoint needs a client secret and blocks browsers. The service sees your token once at sign-in and at each renewal (about every 8 hours). It stores and logs nothing, and accepts requests only from this site. If you prefer no server at all, use a personal access token instead.
 - **The token goes only to the GitHub API.** A strict Content Security Policy lets the page connect only to `api.github.com` (or the hosts you build it for).
 - **The token is kept in sessionStorage by default** and is gone when you close the tab. "Remember me" keeps it in localStorage. **Sign out** clears everything prboard stored.
 - **No analytics, telemetry or third-party scripts.** No avatars or other remote images load.

@@ -1,6 +1,11 @@
 <script lang="ts">
   import type { Auth } from '../auth/auth.svelte';
   import { DEFAULT_API_URL } from '../github/client';
+  import { oauthEnabled } from '../auth/oauth';
+
+  const appSignIn = oauthEnabled();
+  // svelte-ignore state_referenced_locally
+  let showPat = $state(!appSignIn);
 
   let { auth }: { auth: Auth } = $props();
   let token = $state('');
@@ -20,6 +25,20 @@
   <h1>prboard</h1>
   <p class="lede">A pull-request dashboard with the columns you choose, including auto-merge status.</p>
 
+  {#if appSignIn}
+    <div class="app-signin">
+      <button class="primary" disabled={auth.status === 'checking'} onclick={() => auth.startAppSignIn(remember)}>
+        {auth.status === 'checking' ? 'Signing in…' : 'Sign in with GitHub'}
+      </button>
+      <label class="check"><input type="checkbox" bind:checked={remember} /> Remember me on this device</label>
+      <p class="hint">Uses the prboard GitHub App. It can read checks, which personal access tokens cannot.
+        A small sign-in service sees your token once at sign-in and at each renewal; it stores nothing.</p>
+      {#if auth.status === 'error' && auth.error && !showPat}<p class="error" role="alert">{auth.error}</p>{/if}
+      <button type="button" class="link" onclick={() => (showPat = !showPat)}>{showPat ? 'Hide' : 'Use a personal access token instead'}</button>
+    </div>
+  {/if}
+
+  {#if showPat}
   <form onsubmit={submit}>
     <label for="token">GitHub personal access token</label>
     <input id="token" type="password" autocomplete="off" spellcheck="false" bind:value={token} placeholder="github_pat_…" required />
@@ -35,6 +54,7 @@
     </button>
     {#if auth.status === 'error' && auth.error}<p class="error" role="alert">{auth.error}</p>{/if}
   </form>
+  {/if}
 
   <section class="help">
     <h2>Your token stays in this browser</h2>
@@ -61,6 +81,8 @@
   .link { background: none; border: 0; color: var(--accent); padding: 0; justify-self: start; cursor: pointer; font: inherit; font-size: 13px; }
   .hint { color: var(--muted); font-size: 12px; margin: 0; }
   .error { color: var(--bad); margin: 0; }
+  .app-signin { display: grid; gap: 8px; padding: 16px; margin-bottom: 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-raised); }
+  .primary { background: var(--accent); color: #fff; border-color: var(--accent); padding: 8px 14px; font-weight: 600; justify-self: start; }
   .help h2 { font-size: 15px; margin: 20px 0 4px; }
   .help { font-size: 14px; }
 </style>

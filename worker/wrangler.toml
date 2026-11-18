@@ -1,0 +1,13 @@
+name = "prboard-auth"
+main = "src/index.ts"
+compatibility_date = "2026-11-01"
+workers_dev = true
+# No logs of request bodies: the Worker never logs. Keep observability off.
+[observability]
+enabled = false
+
+[vars]
+GITHUB_CLIENT_ID = ""
+ALLOWED_ORIGINS = "https://djf1982.github.io http://localhost:5173"
+REDIRECT_URIS = "https://djf1982.github.io/prboard/ http://localhost:5173/"
+# Secret, set with: npx wrangler secret put GITHUB_CLIENT_SECRET

@@ -45,10 +45,21 @@ export function normaliseApiUrl(raw: string): string {
   return url.toString();
 }
 
-export function createClient(apiUrl: string, token: string, fetchImpl: typeof fetch = fetch.bind(globalThis)): Client {
-  return {
-    apiUrl,
-    async query<T>(query: string, variables: Record<string, unknown> = {}) {
+export interface ClientOptions {
+  /** Called once on a 401. Return true if a new token is ready and the request should be retried. */
+  onUnauthorized?: () => Promise<boolean>;
+}
+
+/** token is a fixed string (personal access token) or a getter (app sign-in, which refreshes). */
+export function createClient(
+  apiUrl: string,
+  tokenOrGetter: string | (() => string | Promise<string>),
+  fetchImpl: typeof fetch = fetch.bind(globalThis),
+  opts: ClientOptions = {},
+): Client {
+  const getToken = typeof tokenOrGetter === 'string' ? () => tokenOrGetter : tokenOrGetter;
+  async function run<T>(query: string, variables: Record<string, unknown>, retried: boolean): Promise<GraphQLResult<T>> {
+      const token = await getToken();
       let res: Response;
       try {
         res = await fetchImpl(apiUrl, {
@@ -69,6 +80,8 @@ export function createClient(apiUrl: string, token: string, fetchImpl: typeof fe
       } catch {
         /* non-JSON error page */
       }
+      if (res.status === 401 && !retried && opts.onUnauthorized && (await opts.onUnauthorized()))
+        return run<T>(query, variables, true);
       if (res.status === 401) throw new GitHubError('GitHub rejected the token (401). Check that it is valid and not expired.', 401, 'auth');
       if (res.status === 403 || res.status === 429) {
         const msg = body.message ?? 'Forbidden';
@@ -82,7 +95,10 @@ export function createClient(apiUrl: string, token: string, fetchImpl: typeof fe
         throw new GitHubError(errors.map((e) => e.message).join('; '), res.status, limited ? 'rate-limit' : 'graphql');
       }
       return { data: body.data ?? null, errors };
-    },
+  }
+  return {
+    apiUrl,
+    query: <T>(query: string, variables: Record<string, unknown> = {}) => run<T>(query, variables, false),
   };
 }
 

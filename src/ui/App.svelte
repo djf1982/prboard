@@ -11,6 +11,9 @@
   import ColumnPicker from './ColumnPicker.svelte';
   import ViewEditor from './ViewEditor.svelte';
   import ConfigPanel from './ConfigPanel.svelte';
+  import { installUrl } from '../auth/oauth';
+
+  const appInstallUrl = installUrl();
 
   const auth = new Auth();
   const store = new ConfigStore();
@@ -76,7 +79,10 @@
       <button class:on={panel === 'columns'} onclick={() => (panel = panel === 'columns' ? null : 'columns')}>Columns</button>
       <button class:on={panel === 'view'} onclick={() => (panel = panel === 'view' ? null : 'view')}>View</button>
       <button class:on={panel === 'config'} onclick={() => (panel = panel === 'config' ? null : 'config')}>Config</button>
-      <span class="who" title="Signed in to {auth.apiUrl}">@{auth.login}</span>
+      {#if auth.kind === 'app' && appInstallUrl}
+        <a class="install" href={appInstallUrl} target="_blank" rel="noopener noreferrer" title="The app sees only repositories where it is installed">Install on an org</a>
+      {/if}
+      <span class="who" title="Signed in to {auth.apiUrl}{auth.kind === 'app' ? ' with the prboard GitHub App' : ' with a personal access token'}">@{auth.login}</span>
       <button onclick={() => { if (confirm('Sign out and remove the token and config from this browser?')) { data.stop(); auth.signOut(); } }}>Sign out</button>
     </header>
 
@@ -159,6 +165,7 @@
   .n { margin-left: 6px; font-size: 11px; border: 1px solid var(--border); border-radius: 999px; padding: 0 6px; }
   .spacer { flex: 1; }
   .who { color: var(--muted); font-size: 13px; }
+  .install { font-size: 13px; }
   button.on { border-color: var(--accent); color: var(--accent); }
   .banner { padding: 6px 14px; font-size: 13px; border-bottom: 1px solid var(--border); display: flex; gap: 8px; align-items: center; }
   .banner.info { background: var(--info-bg); }

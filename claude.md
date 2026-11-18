@@ -10,7 +10,7 @@ Why it exists: github.com/pulls and the repo PR list don't let you choose column
 
 ## Principles (don't trade these away)
 
-1. **No backend.** Static app, deployable to GitHub Pages. All GitHub API calls go directly from the user's browser. The token never leaves the user's machine. This is the main trust argument for an OSS tool that asks for GitHub access — say so in the README.
+1. **No backend for data.** Static app, deployable to GitHub Pages. The only server code is the optional, stateless token exchange in `worker/` for GitHub App sign-in (see `docs/plans/oauth-signin.md`); personal access tokens need no server. All GitHub API calls go directly from the user's browser. The token never leaves the user's machine. This is the main trust argument for an OSS tool that asks for GitHub access — say so in the README.
 2. **Configs are data, never code.** Configs get shared between people (links, files in repos). They must never be able to execute anything. No `eval`, no `new Function`, no user-supplied templates that compile to JS, no rendering config strings as HTML. Computed columns are **declarative only** (see below).
 3. **Columns are a registry, not a switch statement.** Adding a column = adding one registry entry. This is the main way contributors will extend the project, so keep it easy.
 4. **Query only what's displayed.** The GraphQL query is built from the fields that the active views actually use. Rate limits and latency depend on it.

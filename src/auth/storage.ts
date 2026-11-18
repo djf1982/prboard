@@ -1,6 +1,8 @@
 /** Storage access that never throws (private mode, blocked storage, quota). */
 export const KEYS = {
   token: 'prboard.token',
+  /** GitHub App sign-in: access token, expiry and refresh token (JSON). */
+  session: 'prboard.session',
   apiUrl: 'prboard.apiUrl',
   config: 'prboard.config',
 } as const;
