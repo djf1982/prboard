@@ -36,10 +36,12 @@ Make a [fine-grained token](https://github.com/settings/personal-access-tokens/n
 
 | Use | Repository permissions |
 | --- | --- |
-| Read-only dashboard | Pull requests: **read**, Commit statuses: **read**, Checks: **read** (Metadata: read is automatic) |
+| Read-only dashboard | Pull requests: **read**, Commit statuses: **read** (Metadata: read is automatic) |
 | Actions column | Pull requests: **read and write** |
 | "Update branch" action | also Contents: **read and write** |
 | "Load from repo" config | also Contents: **read** |
+
+**The `checks` column and fine-grained tokens.** Fine-grained tokens have no "Checks" permission, and GitHub does not list the check-runs endpoints for them. So a fine-grained token may see only legacy commit statuses, and the column shows **no access** for GitHub Actions checks. A classic token with the `repo` scope can read check runs, but that scope also grants write access to every repository you can reach. A GitHub App or OAuth sign-in is the long-term fix (see "Later" in `claude.md`).
 
 When the token cannot read a field, the cell shows **no access** and names the permission it needs.
 When an action fails because the token cannot write, a banner says which permission to add.
@@ -78,7 +80,7 @@ When an action fails because the token cannot write, a banner says which permiss
 | `reviewDecision` | Approved / changes requested / review required | low | Pull requests: read |
 | `pendingReviewers` | People and teams still asked to review | low | Pull requests: read; Members: read for team names (unverified) |
 | `latestReviews` | Who approved and who asked for changes | low | Pull requests: read |
-| `checks` | Passing/total checks; failing names on hover | **high** | Pull requests, Commit statuses, Checks: read (unverified) |
+| `checks` | Passing/total checks; failing names on hover | **high** | Pull requests and Commit statuses: read. Check runs (GitHub Actions) need a classic token; see above |
 | `mergeState` | Clean / blocked / behind / dirty / unstable / draft | low | Pull requests: read |
 | `mergeable` | Mergeable / conflicting / unknown | low | Pull requests: read |
 | `mergeQueue` | Position and state in the merge queue | low | Pull requests: read |

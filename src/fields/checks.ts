@@ -68,6 +68,8 @@ export const checksFields: FieldDef[] = [
         icon: v.failed ? 'x' : v.pending ? 'clock' : 'check',
       };
     },
-    requires: ['Pull requests: read', 'Commit statuses: read', 'Checks: read'],
+    // Fine-grained tokens have no Checks permission, so they may not see check runs (GitHub Actions).
+    // Commit statuses: read covers legacy status contexts only.
+    requires: ['Pull requests: read', 'Commit statuses: read', 'Classic token (repo scope) for check runs'],
   }),
 ];

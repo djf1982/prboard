@@ -43,7 +43,8 @@
     <ol>
       <li>Open <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener noreferrer">new fine-grained token</a>.</li>
       <li>Pick the resource owner (you or your organisation) and the repositories.</li>
-      <li>Repository permissions to <strong>read</strong>: Pull requests, Commit statuses, Checks (Metadata is added for you).</li>
+      <li>Repository permissions to <strong>read</strong>: Pull requests and Commit statuses (Metadata is added for you).</li>
+      <li>Fine-grained tokens have no Checks permission, so the <strong>Checks</strong> column may show "no access" for GitHub Actions checks. A classic token with the <code>repo</code> scope can read them, but it also has write access to every repository you can reach.</li>
       <li>To use the <strong>Actions</strong> column (auto-merge, ready for review, merge queue, approve), set Pull requests to <strong>Read and write</strong>. Update branch also needs Contents: read and write.</li>
     </ol>
     <p class="hint">Organisations can require approval for fine-grained tokens. Classic tokens need SSO authorisation in SAML organisations.</p>

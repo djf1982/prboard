@@ -23,7 +23,7 @@ export type Permission =
   | 'Pull requests: write'
   | 'Metadata: read'
   | 'Commit statuses: read'
-  | 'Checks: read'
+  | 'Classic token (repo scope) for check runs'
   | 'Contents: read'
   | 'Contents: write'
   | 'Members: read';
