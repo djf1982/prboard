@@ -83,7 +83,7 @@ The differentiators:
 - `reviewDecision` — APPROVED / CHANGES_REQUESTED / REVIEW_REQUIRED / none
 - `pendingReviewers` — `reviewRequests { nodes { requestedReviewer { ... on User { login } ... on Team { slug } } } }`
 - `latestReviews` — who approved and who requested changes
-- `checks` — (built from `PullRequest.statusCheckRollup` directly, with `checkRunCountsByState`/`statusContextCountsByState` for exact counts) originally specified as `commits(last: 1) { nodes { commit { statusCheckRollup { state contexts(...) { ... on CheckRun { name status conclusion } ... on StatusContext { context state } } } } } }` → "23/24", failing names on hover. **High cost.**
+- `checks` — (built from `PullRequest.statusCheckRollup` directly, with `checkRunCountsByState`/`statusContextCountsByState` for exact counts) originally specified as `commits(last: 1) { nodes { commit { statusCheckRollup { state contexts(...) { ... on CheckRun { name status conclusion } ... on StatusContext { context state } } } } } }` → "23/24"; a click opens a popover that lists the checks, grouped by status. **High cost.**
 - `mergeState` — `mergeStateStatus` (BLOCKED / BEHIND / CLEAN / DIRTY / UNSTABLE / HAS_HOOKS / DRAFT / UNKNOWN). Verified 2026-11-18: no preview header is needed.
 - `mergeable` — MERGEABLE / CONFLICTING / UNKNOWN
 - `mergeQueue` — `isInMergeQueue`, `mergeQueueEntry { position state }`
