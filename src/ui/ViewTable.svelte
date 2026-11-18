@@ -164,7 +164,7 @@
 </script>
 
 <div class="wrap">
-  <table class="grid" style:width="{table.getTotalSize()}px">
+  <table class="grid" style:min-width="{table.getTotalSize()}px">
     <thead>
       {#each table.getHeaderGroups() as group (group.id)}
         <tr>
@@ -172,7 +172,8 @@
             {@const col = colById.get(header.column.id)}
             {@const sorted = header.column.getIsSorted()}
             <th
-              style:width="{header.getSize()}px"
+              style:width={header.column.id === 'title' ? undefined : `${header.getSize()}px`}
+              class:flex={header.column.id === 'title'}
               draggable="true"
               class:drag-over={dragId && dragId !== header.column.id}
               ondragstart={(e) => { dragId = header.column.id; e.dataTransfer?.setData('text/plain', header.column.id); }}
@@ -228,7 +229,7 @@
           <tr>
             {#each row.getVisibleCells() as cell (cell.id)}
               {@const col = colById.get(cell.column.id)}
-              <td style:width="{cell.column.getSize()}px">
+              <td class:actions-cell={col?.kind === 'actions'}>
                 {#if !col}
                   <span class="muted">?</span>
                 {:else if col.kind === 'actions'}
@@ -253,29 +254,38 @@
 </div>
 
 <style>
-  .wrap { overflow: auto; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-raised); }
-  .grid { border-collapse: separate; border-spacing: 0; table-layout: fixed; min-width: 100%; }
-  th, td { padding: 5px 8px; border-bottom: 1px solid var(--border-soft); overflow: hidden; text-align: left; vertical-align: middle; }
+  .wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 10px; background: var(--bg-raised); box-shadow: var(--card-shadow); }
+  .grid { width: 100%; border-collapse: separate; border-spacing: 0; table-layout: fixed; }
+  th, td { padding: 0 12px; height: 40px; border-bottom: 1px solid var(--border-soft); overflow: hidden; text-align: left; vertical-align: middle; }
   td { white-space: nowrap; }
-  th { position: sticky; top: 0; z-index: 2; background: var(--bg-head); font-weight: 600; font-size: 12px; color: var(--muted); user-select: none; }
+  tbody tr:last-child td { border-bottom: 0; }
+  th { position: sticky; top: 0; z-index: 2; height: 34px; background: var(--bg-head); font-weight: 600; font-size: 11px;
+    letter-spacing: .04em; text-transform: uppercase; color: var(--muted); user-select: none; }
   th.drag-over:hover { box-shadow: inset 2px 0 0 var(--accent); }
-  .th { display: flex; align-items: center; gap: 2px; }
-  .sort { flex: 1; min-width: 0; text-align: left; background: none; border: 0; padding: 0; font: inherit; color: inherit; cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .th { display: flex; align-items: center; position: relative; min-width: 0; }
+  .sort { all: unset; flex: 1; min-width: 0; cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .sort:disabled { cursor: default; }
-  .arrow { color: var(--accent); margin-left: 2px; }
-  .cost { color: var(--warn); margin-left: 3px; font-weight: 700; }
-  .tools { display: inline-flex; opacity: 0; transition: opacity .1s; }
-  th:hover .tools, th:focus-within .tools { opacity: 1; }
-  .tool { background: none; border: 0; color: var(--muted); cursor: pointer; padding: 0 3px; font-size: 13px; }
-  .tool:hover, .tool.on { color: var(--accent); }
-  .resizer { position: absolute; right: 0; top: 0; height: 100%; width: 5px; cursor: col-resize; touch-action: none; }
-  .resizer:hover, .resizer.resizing { background: var(--accent); }
-  th { position: sticky; }
-  tbody tr:not(.group-row):hover td { background: var(--hover); }
-  .group-row td { background: var(--bg-group); padding: 4px 8px; }
-  .group-toggle { background: none; border: 0; font: inherit; color: inherit; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; font-weight: 600; }
-  .caret { width: 12px; color: var(--muted); }
-  .count { font-weight: 500; font-size: 12px; color: var(--muted); border: 1px solid var(--border); border-radius: 999px; padding: 0 6px; }
+  .sort:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
+  .sort:hover:not(:disabled) { color: var(--fg); }
+  .arrow { color: var(--accent); margin-left: 4px; }
+  .arrow sub { font-size: 9px; }
+  .cost { color: var(--warn); margin-left: 4px; font-weight: 700; }
+  /* Hover tools float over the label, so they never take its space. */
+  .tools { position: absolute; right: -4px; display: inline-flex; gap: 1px; padding-left: 12px; opacity: 0; pointer-events: none;
+    background: linear-gradient(to right, transparent, var(--bg-head) 10px); transition: opacity .12s; }
+  th:hover .tools, th:focus-within .tools { opacity: 1; pointer-events: auto; }
+  .tool { all: unset; cursor: pointer; color: var(--muted); padding: 2px 4px; border-radius: 4px; font-size: 12px; line-height: 1; }
+  .tool:hover, .tool.on { color: var(--accent); background: var(--hover); }
+  .resizer { position: absolute; right: 0; top: 6px; bottom: 6px; width: 4px; cursor: col-resize; touch-action: none; border-radius: 2px; }
+  th:hover .resizer { background: var(--border); }
+  .resizer:hover, .resizer.resizing { background: var(--accent) !important; }
+  tbody tr:not(.group-row):hover td { background: var(--row-hover); }
+  .group-row td { background: var(--bg-group); height: 34px; border-bottom: 1px solid var(--border-soft); }
+  .group-toggle { all: unset; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; font-weight: 600; font-size: 13px; }
+  .group-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
+  .caret { width: 10px; color: var(--muted); font-size: 10px; }
+  .count { font-weight: 500; font-size: 11px; color: var(--muted); background: var(--chip-bg); border-radius: 999px; padding: 1px 7px; }
+  .actions-cell { text-align: right; overflow: visible; }
   .forbidden { color: var(--warn); font-size: 12px; cursor: help; border-bottom: 1px dotted currentColor; }
   .muted { color: var(--muted); }
 </style>

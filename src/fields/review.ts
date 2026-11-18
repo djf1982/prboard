@@ -14,7 +14,7 @@ export const reviewFields: FieldDef[] = [
       if (!v) return { text: 'none', tone: 'muted' };
       const tone: Tone = v === 'APPROVED' ? 'good' : v === 'CHANGES_REQUESTED' ? 'bad' : 'warn';
       const icon = v === 'APPROVED' ? 'check' : v === 'CHANGES_REQUESTED' ? 'x' : 'eye';
-      return { text: titleCase(v).toLowerCase(), tone, icon };
+      return { text: titleCase(v).toLowerCase(), tone, icon, pill: true };
     },
     requires: ['Pull requests: read'],
   }),

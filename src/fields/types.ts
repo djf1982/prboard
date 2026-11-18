@@ -15,6 +15,10 @@ export interface Cell {
   tone?: Tone;
   icon?: IconId;
   chips?: { text: string; tone?: Tone; title?: string }[];
+  /** Short muted text after the main text, for example "#4054". */
+  meta?: string;
+  /** Show as a status pill (soft background in the tone colour). */
+  pill?: boolean;
 }
 
 /** Fine-grained token permissions, as GitHub names them in the token settings. */

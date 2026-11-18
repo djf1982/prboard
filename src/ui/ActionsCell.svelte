@@ -89,7 +89,8 @@
 {#if error}<span class="err" title={error}>failed</span>{/if}
 
 <style>
-  .trigger { font-size: 12px; padding: 1px 6px; border: 1px solid var(--border); border-radius: 4px; background: var(--bg-raised); cursor: pointer; }
+  .trigger { font-size: 12px; padding: 3px 10px; border: 1px solid var(--border); border-radius: 6px; background: transparent; color: var(--fg-soft); cursor: pointer; }
+  .trigger:hover { background: var(--hover); color: var(--fg); }
   .menu { position: fixed; inset: auto; margin: 0; padding: 4px; background: var(--bg-raised); color: var(--fg); border: 1px solid var(--border); border-radius: 6px; box-shadow: var(--shadow); min-width: 220px; }
   ul { margin: 0; padding: 0; list-style: none; }
   li { display: block; }

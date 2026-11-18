@@ -31,7 +31,7 @@ export const mergeFields: FieldDef[] = [
       const who = v.enabledBy?.login ?? 'someone';
       return {
         text: `on · ${v.mergeMethod.toLowerCase()}`,
-        tone: 'good', icon: 'merge',
+        tone: 'good', icon: 'merge', pill: true,
         title: `Enabled by ${who}${v.enabledAt ? ' on ' + shortDate(v.enabledAt) : ''} (${v.mergeMethod.toLowerCase()})`,
       };
     },
@@ -46,7 +46,7 @@ export const mergeFields: FieldDef[] = [
     display: (v, pr) => {
       if (!v) return EMPTY;
       const title = v === 'DRAFT' && pr.mergeStateStatus !== 'DRAFT' ? `${MERGE_STATE_HELP.DRAFT} (GitHub reports ${pr.mergeStateStatus?.toLowerCase()}.)` : MERGE_STATE_HELP[v];
-      return { text: titleCase(v).toLowerCase(), tone: MERGE_STATE_TONE[v] ?? 'neutral', title };
+      return { text: titleCase(v).toLowerCase(), tone: MERGE_STATE_TONE[v] ?? 'neutral', title, pill: true };
     },
     requires: ['Pull requests: read'],
   }),
@@ -55,7 +55,7 @@ export const mergeFields: FieldDef[] = [
     fragment: 'mergeable', width: 110,
     get: (pr) => pr.mergeable,
     groupValue: (v) => (v ? titleCase(v) : 'Unknown'),
-    display: (v) => (v ? { text: v.toLowerCase(), tone: v === 'MERGEABLE' ? 'good' : v === 'CONFLICTING' ? 'bad' : 'muted', icon: v === 'CONFLICTING' ? 'alert' : undefined } : EMPTY),
+    display: (v) => (v ? { text: v.toLowerCase(), tone: v === 'MERGEABLE' ? 'good' : v === 'CONFLICTING' ? 'bad' : 'muted', icon: v === 'CONFLICTING' ? 'alert' : undefined, pill: true } : EMPTY),
     requires: ['Pull requests: read'],
   }),
   defineField<{ inQueue: boolean; position?: number; state?: string } | undefined>({
@@ -68,7 +68,7 @@ export const mergeFields: FieldDef[] = [
       if (!v) return EMPTY;
       if (!v.inQueue) return { text: '', tone: 'muted' };
       const state = v.state ? titleCase(v.state).toLowerCase() : 'queued';
-      return { text: `#${v.position ?? '?'} · ${state}`, icon: 'queue', tone: v.state === 'UNMERGEABLE' ? 'bad' : 'neutral' };
+      return { text: `#${v.position ?? '?'} · ${state}`, icon: 'queue', tone: v.state === 'UNMERGEABLE' ? 'bad' : 'neutral', pill: true };
     },
     requires: ['Pull requests: read'],
   }),

@@ -76,6 +76,7 @@ export const checksFields: FieldDef[] = [
         href: `${pr.url}/checks`,
         tone: v.failed ? 'bad' : v.pending ? 'warn' : v.cancelled ? 'muted' : 'good',
         icon: v.failed ? 'x' : v.pending ? 'clock' : v.cancelled ? 'dot' : 'check',
+        pill: true,
       };
     },
     // Fine-grained tokens have no Checks permission, so they may not see check runs (GitHub Actions).

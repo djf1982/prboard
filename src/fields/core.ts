@@ -11,10 +11,14 @@ export const coreFields: FieldDef[] = [
     requires: [...PR_READ],
   }),
   defineField<string>({
-    id: 'title', label: 'Title', description: 'Pull request title, as plain text.', fragment: 'title', width: 380,
+    id: 'title', label: 'Title', description: 'Pull request title, as plain text, with its number. Drafts show a draft icon.',
+    fragment: 'title number isDraft', width: 380,
     get: (pr) => pr.title ?? '',
     sortValue: (v) => v.toLowerCase(),
-    display: (v, pr) => ({ text: v, href: pr.url, title: v }),
+    display: (v, pr) => ({
+      text: v, href: pr.url, meta: pr.number !== undefined ? `#${pr.number}` : undefined,
+      title: pr.isDraft ? `Draft: ${v}` : v, icon: pr.isDraft ? 'draft' : undefined, tone: pr.isDraft ? 'muted' : undefined,
+    }),
     requires: [...PR_READ],
   }),
   defineField<string>({
@@ -44,14 +48,14 @@ export const coreFields: FieldDef[] = [
     get: (pr) => pr.isDraft,
     sortValue: (v) => (v ? 1 : 0),
     groupValue: (v) => (v ? 'Draft' : 'Ready'),
-    display: (v) => (v ? { text: 'draft', icon: 'draft', tone: 'muted' } : { text: 'ready', tone: 'neutral' }),
+    display: (v) => (v ? { text: 'draft', icon: 'draft', tone: 'muted', pill: true } : { text: 'ready', tone: 'good', pill: true }),
     requires: [...PR_READ],
   }),
   defineField<string>({
     id: 'state', label: 'State', description: 'OPEN, CLOSED or MERGED.', fragment: 'state', width: 90,
     get: (pr) => pr.state ?? '',
     groupValue: (v) => (v ? titleCase(v) : 'Unknown'),
-    display: (v) => ({ text: v ? titleCase(v) : '', tone: v === 'OPEN' ? 'good' : v === 'MERGED' ? 'neutral' : 'muted', icon: v === 'MERGED' ? 'merge' : undefined }),
+    display: (v) => ({ text: v ? titleCase(v) : '', tone: v === 'OPEN' ? 'good' : v === 'MERGED' ? 'neutral' : 'muted', icon: v === 'MERGED' ? 'merge' : undefined, pill: !!v }),
     requires: [...PR_READ],
   }),
   defineField<number | undefined>({
@@ -131,7 +135,7 @@ export const coreFields: FieldDef[] = [
     id: 'size', label: 'Size', description: 'XS–XL bucket from lines added plus deleted.', fragment: 'additions deletions', width: 70,
     get: (pr) => (pr.additions === undefined || pr.deletions === undefined ? undefined : pr.additions + pr.deletions),
     groupValue: (v) => sizeBucket(v),
-    display: (v) => (v === undefined ? EMPTY : { text: sizeBucket(v), title: `${v} lines changed`, tone: v >= 1000 ? 'warn' : 'neutral' }),
+    display: (v) => (v === undefined ? EMPTY : { text: sizeBucket(v), title: `${v} lines changed`, tone: v >= 1000 ? 'warn' : 'neutral', pill: true }),
     requires: [...PR_READ],
   }),
   defineField<number | undefined>({

@@ -65,7 +65,7 @@
 {:else}
   <div class="app">
     <header>
-      <strong class="brand">prboard</strong>
+      <span class="brand"><span class="logo" aria-hidden="true"></span>prboard</span>
       <nav class="tabs" aria-label="Views">
         {#each store.config.views as v (v.name)}
           {@const d = data.view(v.name)}
@@ -75,15 +75,21 @@
         {/each}
       </nav>
       <div class="spacer"></div>
-      <button onclick={() => data.refresh()} disabled={data.loading} title="Refresh now">{data.loading ? 'Refreshing…' : '↻ Refresh'}</button>
-      <button class:on={panel === 'columns'} onclick={() => (panel = panel === 'columns' ? null : 'columns')}>Columns</button>
-      <button class:on={panel === 'view'} onclick={() => (panel = panel === 'view' ? null : 'view')}>View</button>
-      <button class:on={panel === 'config'} onclick={() => (panel = panel === 'config' ? null : 'config')}>Config</button>
+      <button class="ghost" onclick={() => data.refresh()} disabled={data.loading} title="Refresh now">
+        <span class="spin" class:spinning={data.loading}>↻</span> {data.loading ? 'Refreshing' : 'Refresh'}
+      </button>
+      <div class="seg" role="group" aria-label="Panels">
+        <button class:on={panel === 'columns'} onclick={() => (panel = panel === 'columns' ? null : 'columns')}>Columns</button>
+        <button class:on={panel === 'view'} onclick={() => (panel = panel === 'view' ? null : 'view')}>View</button>
+        <button class:on={panel === 'config'} onclick={() => (panel = panel === 'config' ? null : 'config')}>Config</button>
+      </div>
       {#if auth.kind === 'app' && appInstallUrl}
         <a class="install" href={appInstallUrl} target="_blank" rel="noopener noreferrer" title="The app sees only repositories where it is installed">Install on an org</a>
       {/if}
-      <span class="who" title="Signed in to {auth.apiUrl}{auth.kind === 'app' ? ' with the prboard GitHub App' : ' with a personal access token'}">@{auth.login}</span>
-      <button onclick={() => { if (confirm('Sign out and remove the token and config from this browser?')) { data.stop(); auth.signOut(); } }}>Sign out</button>
+      <span class="who" title="Signed in to {auth.apiUrl}{auth.kind === 'app' ? ' with the prboard GitHub App' : ' with a personal access token'}">
+        <span class="avatar" aria-hidden="true">{(auth.login ?? '?').slice(0, 1).toUpperCase()}</span>{auth.login}
+      </span>
+      <button class="ghost" onclick={() => { if (confirm('Sign out and remove the token and config from this browser?')) { data.stop(); auth.signOut(); } }}>Sign out</button>
     </header>
 
     {#if store.unsaved}
@@ -104,8 +110,9 @@
     <div class="body" class:with-panel={panel}>
       <section class="main">
         <div class="meta">
-          <code class="query">{view.query}</code>
-          {#if viewData.fetchedAt}<span>{viewData.total.toLocaleString()} found</span>{/if}
+          <span class="label">Query</span>
+          <code class="query" title={view.query}>{view.query}</code>
+          {#if viewData.fetchedAt}<span class="found">{viewData.total.toLocaleString()} {viewData.total === 1 ? 'result' : 'results'}</span>{/if}
         </div>
         {#if !viewData.fetchedAt && (data.loading || !data.lastUpdated) && !viewData.error}
           <p class="state">Loading pull requests…</p>
@@ -157,30 +164,46 @@
 
 <style>
   .app { display: flex; flex-direction: column; min-height: 100vh; }
-  header { display: flex; align-items: center; gap: 6px; padding: 8px 14px; border-bottom: 1px solid var(--border); background: var(--bg-raised); flex-wrap: wrap; }
-  .brand { margin-right: 10px; }
-  .tabs { display: flex; gap: 2px; flex-wrap: wrap; }
-  .tab { border: 0; background: none; padding: 6px 10px; border-radius: 6px; cursor: pointer; font: inherit; color: var(--muted); }
-  .tab.active { background: var(--hover); color: var(--fg); font-weight: 600; }
-  .n { margin-left: 6px; font-size: 11px; border: 1px solid var(--border); border-radius: 999px; padding: 0 6px; }
+  header { display: flex; align-items: center; gap: 8px; padding: 0 16px; height: 52px; border-bottom: 1px solid var(--border); background: var(--bg-raised); flex-wrap: wrap; position: sticky; top: 0; z-index: 10; }
+  .brand { display: inline-flex; align-items: center; gap: 8px; font-weight: 700; letter-spacing: -.01em; margin-right: 12px; }
+  .logo { width: 18px; height: 18px; border-radius: 5px; background: linear-gradient(135deg, var(--accent), var(--good)); }
+  .tabs { display: flex; gap: 4px; align-self: stretch; }
+  .tab { all: unset; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; padding: 0 10px; color: var(--muted); font-size: 14px; border-bottom: 2px solid transparent; margin-bottom: -1px; }
+  .tab:hover { color: var(--fg); }
+  .tab:focus-visible { outline: 2px solid var(--accent); outline-offset: -4px; border-radius: 4px; }
+  .tab.active { color: var(--fg); font-weight: 600; border-bottom-color: var(--accent); }
+  .n { font-size: 11px; font-weight: 500; background: var(--chip-bg); color: var(--muted); border-radius: 999px; padding: 1px 7px; }
+  .tab.active .n { color: var(--fg); }
   .spacer { flex: 1; }
-  .who { color: var(--muted); font-size: 13px; }
-  .install { font-size: 13px; }
-  button.on { border-color: var(--accent); color: var(--accent); }
-  .banner { padding: 6px 14px; font-size: 13px; border-bottom: 1px solid var(--border); display: flex; gap: 8px; align-items: center; }
+  .ghost { background: transparent; border-color: transparent; color: var(--fg-soft); }
+  .ghost:hover:not(:disabled) { background: var(--hover); color: var(--fg); }
+  .spin { display: inline-block; }
+  .spinning { animation: spin 1s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  .seg button { border: 0; border-radius: 0; background: transparent; padding: 4px 12px; color: var(--fg-soft); }
+  .seg button + button { border-left: 1px solid var(--border); }
+  .seg button:hover { background: var(--hover); color: var(--fg); }
+  .seg button.on { background: var(--accent-soft); color: var(--accent); }
+  .install { font-size: 13px; padding: 0 6px; }
+  .who { display: inline-flex; align-items: center; gap: 6px; color: var(--fg-soft); font-size: 13px; padding: 0 4px; }
+  .avatar { width: 22px; height: 22px; border-radius: 50%; display: inline-grid; place-items: center; font-size: 11px; font-weight: 700; background: var(--accent-soft); color: var(--accent); }
+  .banner { padding: 8px 16px; font-size: 13px; border-bottom: 1px solid var(--border); display: flex; gap: 8px; align-items: center; }
   .banner.info { background: var(--info-bg); }
   .banner.warn { background: var(--warn-bg); }
   .banner.bad { background: var(--bad-bg); }
-  .body { flex: 1; display: grid; grid-template-columns: 1fr; gap: 12px; padding: 12px 14px; min-height: 0; }
+  .body { flex: 1; display: grid; grid-template-columns: 1fr; gap: 16px; padding: 16px; min-height: 0; max-width: 1600px; width: 100%; margin: 0 auto; box-sizing: border-box; }
   .body.with-panel { grid-template-columns: minmax(0, 1fr) 360px; }
   .main { min-width: 0; }
-  .meta { display: flex; gap: 10px; align-items: center; margin-bottom: 8px; font-size: 13px; color: var(--muted); }
-  .query { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .state { color: var(--muted); padding: 24px; text-align: center; border: 1px dashed var(--border); border-radius: 8px; }
-  .side { position: relative; border: 1px solid var(--border); border-radius: 8px; padding: 12px; background: var(--bg-raised); align-self: start; max-height: calc(100vh - 140px); overflow: auto; }
-  .close { position: absolute; right: 6px; top: 6px; border: 0; background: none; font-size: 18px; cursor: pointer; color: var(--muted); }
+  .meta { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; font-size: 13px; color: var(--muted); min-width: 0; }
+  .label { font-size: 11px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; }
+  .query { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--mono); font-size: 12px; background: var(--chip-bg); color: var(--fg-soft); padding: 2px 8px; border-radius: 6px; min-width: 0; }
+  .found { flex: none; }
+  .state { color: var(--muted); padding: 48px 24px; text-align: center; border: 1px dashed var(--border); border-radius: 10px; }
+  .side { position: relative; border: 1px solid var(--border); border-radius: 10px; padding: 16px; background: var(--bg-raised); align-self: start; max-height: calc(100vh - 140px); overflow: auto; box-shadow: var(--card-shadow); }
+  .close { position: absolute; right: 8px; top: 8px; border: 0; background: none; font-size: 18px; cursor: pointer; color: var(--muted); }
   .refresh { display: block; margin-top: 16px; font-size: 13px; }
   .refresh input { width: 80px; }
-  footer { display: flex; gap: 16px; flex-wrap: wrap; padding: 6px 14px; font-size: 12px; color: var(--muted); border-top: 1px solid var(--border); }
+  footer { display: flex; gap: 20px; flex-wrap: wrap; padding: 8px 16px; font-size: 12px; color: var(--muted); border-top: 1px solid var(--border); font-variant-numeric: tabular-nums; }
   @media (max-width: 900px) { .body.with-panel { grid-template-columns: 1fr; } }
 </style>
