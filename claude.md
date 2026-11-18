@@ -160,7 +160,8 @@ The `actions` column is a registry in `src/actions/registry.ts`, the same shape 
 - Document org gotchas: orgs can require approval for fine-grained tokens, and classic tokens need SSO authorisation in SAML orgs.
 - Token storage: user's choice of sessionStorage (default) or localStorage ("remember me"). Wrap storage access in try/catch. Provide a sign-out that clears everything.
 - Validate the token on entry with a `viewer { login }` query and show who you're signed in as.
-- Fine-grained tokens have **no Checks permission** (confirmed 2026-11-18: not in the token UI, and the check-runs endpoints are not listed for fine-grained tokens). The `checks` column therefore needs a classic `repo` token, or the OAuth/GitHub App route below, to see GitHub Actions check runs.
+- Fine-grained tokens have **no Checks permission** (confirmed 2026-11-18: not in the token UI, and the check-runs endpoints are not listed for fine-grained tokens). The `checks` column therefore needs a classic `repo` token or GitHub App sign-in to see GitHub Actions check runs.
+- **GitHub App sign-in is live (2026-11-18):** app `prboard-17things` (owner djf1982), token exchange Worker at `https://prboard-auth.17things.co.uk` on the 17 Things Cloudflare account, installed on Scoutstuff. Checks column verified on scoutworks PRs.
 - Later (not v1): optional OAuth via a tiny self-hostable token-exchange function. GitHub's OAuth token endpoint doesn't allow calls from the browser (no CORS), so it can't be done purely client-side.
 
 ## Security checklist

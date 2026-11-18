@@ -1,6 +1,6 @@
 # Plan: sign in with GitHub (GitHub App user authorisation)
 
-Status: proposed, 2026-11-18. Nothing here is built yet.
+Status: **done**, 2026-11-18. App `prboard-17things`; Worker at `https://prboard-auth.17things.co.uk` (17 Things Cloudflare account); installed on Scoutstuff; checks column verified. Still to check: enqueue/dequeue with the app token.
 
 ## Why
 

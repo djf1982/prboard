@@ -42,7 +42,9 @@ Make a [fine-grained token](https://github.com/settings/personal-access-tokens/n
 | "Update branch" action | also Contents: **read and write** |
 | "Load from repo" config | also Contents: **read** |
 
-**The `checks` column and fine-grained tokens.** Fine-grained tokens have no "Checks" permission, and GitHub does not list the check-runs endpoints for them. So a fine-grained token may see only legacy commit statuses, and the column shows **no access** for GitHub Actions checks. A classic token with the `repo` scope can read check runs, but that scope also grants write access to every repository you can reach. A GitHub App or OAuth sign-in is the long-term fix (see "Later" in `claude.md`).
+**The `checks` column.** Use **Sign in with GitHub**: the prboard GitHub App has Checks: read, so it sees GitHub Actions check runs. Fine-grained tokens have no Checks permission, so with a token the column may show **no access** for Actions checks. A classic token with the `repo` scope can read them, but that scope also grants write access to every repository you can reach.
+
+**Install the app on each organisation** you want to see (the "Install on an org" link in the header). The app sees only repositories where it is installed. An organisation owner installs it, or approves a request from a repository admin.
 
 When the token cannot read a field, the cell shows **no access** and names the permission it needs.
 When an action fails because the token cannot write, a banner says which permission to add.
@@ -81,7 +83,7 @@ When an action fails because the token cannot write, a banner says which permiss
 | `reviewDecision` | Approved / changes requested / review required | low | Pull requests: read |
 | `pendingReviewers` | People and teams still asked to review | low | Pull requests: read; Members: read for team names (unverified) |
 | `latestReviews` | Who approved and who asked for changes | low | Pull requests: read |
-| `checks` | Passing/total checks; failing names on hover | **high** | Pull requests and Commit statuses: read. Check runs (GitHub Actions) need a classic token; see above |
+| `checks` | Passing/total checks; failing names on hover | **high** | GitHub App sign-in, or a token with Commit statuses: read (no Actions check runs); see above |
 | `mergeState` | Clean / blocked / behind / dirty / unstable / draft | low | Pull requests: read |
 | `mergeable` | Mergeable / conflicting / unknown | low | Pull requests: read |
 | `mergeQueue` | Position and state in the merge queue | low | Pull requests: read |
