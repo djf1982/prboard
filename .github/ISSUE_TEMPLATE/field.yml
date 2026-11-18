@@ -1,0 +1,19 @@
+name: New field or action
+description: Ask for a new column or row action
+labels: [field]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What should the column show, or the action do?
+    validations:
+      required: true
+  - type: textarea
+    id: graphql
+    attributes:
+      label: GraphQL fields or mutation, if you know them
+      render: graphql
+  - type: input
+    id: perms
+    attributes:
+      label: Token permission it needs, if you know it

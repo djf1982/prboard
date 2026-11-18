@@ -1,0 +1,156 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "version": {
+      "type": "number",
+      "const": 1
+    },
+    "refreshSeconds": {
+      "default": 120,
+      "type": "integer",
+      "minimum": 30,
+      "maximum": 3600
+    },
+    "views": {
+      "minItems": 1,
+      "maxItems": 30,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 60
+          },
+          "query": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000,
+            "description": "GitHub search query. is:pr is added if missing."
+          },
+          "groupBy": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 60,
+            "pattern": "^[A-Za-z][A-Za-z0-9_-]*$"
+          },
+          "sort": {
+            "default": [],
+            "maxItems": 5,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "field": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 60,
+                  "pattern": "^[A-Za-z][A-Za-z0-9_-]*$"
+                },
+                "dir": {
+                  "default": "asc",
+                  "type": "string",
+                  "enum": [
+                    "asc",
+                    "desc"
+                  ]
+                }
+              },
+              "required": [
+                "field"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "columns": {
+            "minItems": 1,
+            "maxItems": 50,
+            "type": "array",
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 60,
+                  "pattern": "^[A-Za-z][A-Za-z0-9_-]*$"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 60,
+                      "pattern": "^[A-Za-z][A-Za-z0-9_-]*$",
+                      "description": "A field id from the registry, or a new id for a computed column."
+                    },
+                    "label": {
+                      "description": "Column header. Defaults to the field label.",
+                      "type": "string",
+                      "maxLength": 100
+                    },
+                    "width": {
+                      "description": "Column width in pixels.",
+                      "type": "integer",
+                      "minimum": 40,
+                      "maximum": 2000
+                    },
+                    "hidden": {
+                      "description": "Keep the column in the config but do not show or fetch it.",
+                      "type": "boolean"
+                    },
+                    "from": {
+                      "description": "Computed columns: the field to read from.",
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 60,
+                      "pattern": "^[A-Za-z][A-Za-z0-9_-]*$"
+                    },
+                    "regex": {
+                      "description": "Computed columns: show the first match.",
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 200
+                    },
+                    "link": {
+                      "description": "Computed columns with regex: https link template. $0–$9 insert match groups.",
+                      "type": "string",
+                      "maxLength": 500
+                    },
+                    "prefix": {
+                      "description": "Computed columns: show list items that start with this prefix, prefix removed.",
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 100
+                    }
+                  },
+                  "required": [
+                    "id"
+                  ],
+                  "additionalProperties": false
+                }
+              ]
+            }
+          }
+        },
+        "required": [
+          "name",
+          "query",
+          "columns"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "version",
+    "views"
+  ],
+  "additionalProperties": false,
+  "title": "prboard config"
+}
