@@ -89,11 +89,14 @@
 </div>
 
 <style>
-  .trigger { all: unset; cursor: pointer; display: inline-flex; max-width: 100%; border-radius: 999px; }
-  .trigger:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .trigger { all: unset; cursor: pointer; display: inline-flex; max-width: 100%; border-radius: var(--r-sm); }
+  .trigger:focus-visible { outline: 2px solid color-mix(in srgb, var(--accent) 60%, transparent); outline-offset: 1px; }
+  .trigger[aria-expanded='true'] :global(.pill) { box-shadow: inset 0 0 0 1px color-mix(in srgb, currentColor 35%, transparent); }
   .pop { position: fixed; inset: auto; margin: 0; padding: 0; width: min(420px, calc(100vw - 16px)); max-height: min(70vh, 560px); overflow: auto;
-    background: var(--bg-raised); color: var(--fg); border: 1px solid var(--border); border-radius: 10px; box-shadow: var(--shadow);
+    background: var(--bg-raised); color: var(--fg); border: 1px solid var(--border); border-radius: var(--r-lg); box-shadow: var(--shadow);
     font-size: 13px; text-transform: none; letter-spacing: normal; font-weight: 400; white-space: normal; }
+  .pop:popover-open { animation: pop .14s var(--ease); }
+  @keyframes pop { from { opacity: 0; transform: translateY(-4px) scale(.98); } }
   .head { position: sticky; top: 0; display: flex; align-items: center; gap: 12px; justify-content: space-between; padding: 10px 14px;
     background: var(--bg-raised); border-bottom: 1px solid var(--border-soft); }
   .heading { font-weight: 600; font-variant-numeric: tabular-nums; }
@@ -102,8 +105,9 @@
   .group summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 8px; padding: 6px 14px; font-weight: 600; font-size: 12px; }
   .group summary::-webkit-details-marker { display: none; }
   .group summary:hover { background: var(--hover); }
-  .group summary::after { content: '▸'; margin-left: auto; color: var(--muted); font-size: 10px; transition: transform .12s; }
-  .group[open] summary::after { transform: rotate(90deg); }
+  .group summary::after { content: ''; margin-left: auto; width: 5px; height: 5px; border: solid var(--muted); border-width: 0 1.5px 1.5px 0;
+    transform: rotate(-45deg); transition: transform .15s var(--ease); }
+  .group[open] summary::after { transform: rotate(45deg); }
   .dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; flex: none; }
   .glabel { color: var(--fg); }
   .gcount { color: var(--muted); font-weight: 500; background: var(--chip-bg); border-radius: 999px; padding: 0 7px; font-size: 11px; }
@@ -111,7 +115,9 @@
   li { display: flex; align-items: baseline; gap: 8px; padding: 3px 14px 3px 30px; min-width: 0; }
   li:hover { background: var(--row-hover); }
   .name { color: var(--fg); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
-  a.name:hover { color: var(--accent); }
+  a.name:hover { color: var(--accent); text-decoration: none; }
+  a.name::after { content: ' ↗'; opacity: 0; transition: opacity .12s; }
+  a.name:hover::after { opacity: 1; }
   .meta { margin-left: auto; color: var(--muted); font-size: 12px; white-space: nowrap; flex: none; max-width: 45%; overflow: hidden; text-overflow: ellipsis; }
   .note { margin: 0; padding: 8px 14px 10px; color: var(--muted); font-size: 11px; border-top: 1px solid var(--border-soft); }
 </style>

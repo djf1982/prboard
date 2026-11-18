@@ -21,7 +21,7 @@ const MERGE_STATE_HELP: Record<string, string> = {
 export const mergeFields: FieldDef[] = [
   defineField<AutoMerge>({
     id: 'autoMerge', label: 'Auto-merge', description: 'Whether auto-merge is on, with the merge method. Hover for who enabled it and when.',
-    fragment: 'autoMergeRequest { enabledAt enabledBy { login } mergeMethod }', width: 120,
+    fragment: 'autoMergeRequest { enabledAt enabledBy { login } mergeMethod }', width: 136,
     get: (pr) => pr.autoMergeRequest,
     sortValue: (v) => (v === undefined ? undefined : v ? 1 : 0),
     groupValue: (v) => (v ? 'Auto-merge on' : 'Auto-merge off'),
