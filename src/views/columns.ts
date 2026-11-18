@@ -41,7 +41,7 @@ export function resolveColumn(entry: ColumnEntry): ResolvedColumn | null {
   const hidden = 'hidden' in o && !!o.hidden;
   if (o.id === ACTIONS_COLUMN_ID && !('from' in o && o.from)) {
     return {
-      kind: 'actions', id: o.id, label: ('label' in o && o.label) || 'Actions', width: ('width' in o && o.width) || 150,
+      kind: 'actions', id: o.id, label: ('label' in o && o.label) || 'Actions', width: ('width' in o && o.width) || 56,
       hidden, aux: false, cost: 'low', requires: [...new Set(ACTIONS.flatMap((a) => a.requires))],
       keys: [...new Set(ACTIONS_FRAGMENTS.flatMap(topLevelKeys))],
     };

@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <style>
+    .ink { stroke: #18181b; }
+    .dot { fill: #16803c; }
+    @media (prefers-color-scheme: dark) {
+      .ink { stroke: #ececef; }
+      .dot { fill: #4cc27a; }
+    }
+  </style>
+  <!-- prboard: a lowercase p with the green status dot from the wordmark. -->
+  <path class="ink" d="M5.5 12v16M5.5 12a7 7 0 1 1 0 .01" fill="none" stroke-width="4" stroke-linecap="round" />
+  <circle class="dot" cx="26.5" cy="16.5" r="4" />
+</svg>
