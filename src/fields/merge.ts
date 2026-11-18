@@ -39,10 +39,15 @@ export const mergeFields: FieldDef[] = [
   }),
   defineField<string | undefined>({
     id: 'mergeState', label: 'Merge state', description: 'mergeStateStatus: clean, blocked, behind, dirty, unstable, draft, …',
-    fragment: 'mergeStateStatus', width: 110,
-    get: (pr) => pr.mergeStateStatus,
+    // GitHub now reports BLOCKED (not DRAFT) for drafts, so read isDraft too.
+    fragment: 'mergeStateStatus isDraft', width: 110,
+    get: (pr) => (pr.isDraft && pr.mergeStateStatus ? 'DRAFT' : pr.mergeStateStatus),
     groupValue: (v) => (v ? titleCase(v) : 'Unknown'),
-    display: (v) => (v ? { text: titleCase(v).toLowerCase(), tone: MERGE_STATE_TONE[v] ?? 'neutral', title: MERGE_STATE_HELP[v] } : EMPTY),
+    display: (v, pr) => {
+      if (!v) return EMPTY;
+      const title = v === 'DRAFT' && pr.mergeStateStatus !== 'DRAFT' ? `${MERGE_STATE_HELP.DRAFT} (GitHub reports ${pr.mergeStateStatus?.toLowerCase()}.)` : MERGE_STATE_HELP[v];
+      return { text: titleCase(v).toLowerCase(), tone: MERGE_STATE_TONE[v] ?? 'neutral', title };
+    },
     requires: ['Pull requests: read'],
   }),
   defineField<string | undefined>({

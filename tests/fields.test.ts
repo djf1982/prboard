@@ -82,6 +82,25 @@ describe('differentiator fields', () => {
     expect(chips.map((c) => [c.text, c.tone])).toEqual([['dave', 'bad'], ['erin', 'good']]);
   });
 
+  it('cancelled checks are grey, not failing', () => {
+    const pr = { ...auto!, statusCheckRollup: { state: 'FAILURE', contexts: { totalCount: 13,
+      checkRunCountsByState: [{ state: 'CANCELLED', count: 1 }, { state: 'SKIPPED', count: 10 }, { state: 'SUCCESS', count: 1 }, { state: 'NEUTRAL', count: 1 }, { state: 'COMPLETED', count: 0 }],
+      statusContextCountsByState: [],
+      nodes: [{ __typename: 'CheckRun' as const, name: 'Gate integrity', status: 'COMPLETED', conclusion: 'CANCELLED' }] } } };
+    const c = show('checks', pr);
+    expect(c.text).toBe('12/13');
+    expect(c.tone).toBe('muted');
+    expect(c.title).toContain('Cancelled: Gate integrity');
+    expect(c.title).not.toContain('Failing');
+    expect(f('checks').groupValue!(f('checks').get(pr))).toBe('Some cancelled');
+  });
+
+  it('mergeState shows draft when GitHub reports blocked for a draft', () => {
+    const c = show('mergeState', { ...draft!, mergeStateStatus: 'BLOCKED' });
+    expect(c.text).toBe('draft');
+    expect(c.title).toContain('GitHub reports blocked');
+  });
+
   it('mergeState and mergeable', () => {
     expect(show('mergeState', auto!)).toMatchObject({ text: 'blocked', tone: 'warn' });
     expect(show('mergeState', failing!)).toMatchObject({ text: 'dirty', tone: 'bad' });
