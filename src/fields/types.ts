@@ -19,6 +19,34 @@ export interface Cell {
   meta?: string;
   /** Show as a status pill (soft background in the tone colour). */
   pill?: boolean;
+  /** Structured detail, shown in a popover on click. Plain data, rendered as text. */
+  details?: CellDetails;
+}
+
+export interface CellDetails {
+  /** One-line summary at the top. */
+  heading?: string;
+  /** https link at the top right, for example the PR's checks page. */
+  link?: { text: string; href: string };
+  groups: DetailGroup[];
+  /** Small print at the bottom. */
+  note?: string;
+}
+
+export interface DetailGroup {
+  label: string;
+  tone?: Tone;
+  /** Start folded (for long, uninteresting lists such as passed checks). */
+  collapsed?: boolean;
+  items: DetailItem[];
+}
+
+export interface DetailItem {
+  text: string;
+  /** Muted secondary text, for example the workflow name. */
+  meta?: string;
+  /** https only. */
+  href?: string;
 }
 
 /** Fine-grained token permissions, as GitHub names them in the token settings. */

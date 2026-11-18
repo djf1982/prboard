@@ -57,9 +57,7 @@ describe('differentiator fields', () => {
     const bad = show('checks', failing!);
     expect(bad.text).toBe('1/4');
     expect(bad.tone).toBe('bad');
-    expect(bad.title).toContain('Failing: test, ci/legacy');
-    expect(bad.title).toContain('Pending: e2e');
-    expect(bad.href).toBe('https://github.com/example-org/gadgets/pull/7/checks');
+    expect(bad.details!.groups[0]!.label).toBe('Failing');
     expect(show('checks', draft!).text).toBe('none');
     expect(f('checks').cost).toBe('high');
     const sv = f('checks').sortValue!;
@@ -82,6 +80,22 @@ describe('differentiator fields', () => {
     expect(chips.map((c) => [c.text, c.tone])).toEqual([['dave', 'bad'], ['erin', 'good']]);
   });
 
+  it('checks details group by status and split workflow names', async () => {
+    const { splitCheckName } = await import('../src/fields/checks');
+    expect(splitCheckName('Build & Analysis / Lint')).toEqual({ workflow: 'Build & Analysis', name: 'Lint' });
+    expect(splitCheckName('ci/legacy')).toEqual({ name: 'ci/legacy' });
+    const d = show('checks', failing!).details!;
+    expect(d.heading).toBe('1/4 passed');
+    expect(d.link!.href).toBe('https://github.com/example-org/gadgets/pull/7/checks');
+    expect(d.groups.map((g) => [g.label, g.items.map((i) => i.text), !!g.collapsed])).toEqual([
+      ['Failing', ['ci/legacy', 'test'], false],
+      ['Pending', ['e2e'], false],
+      ['Passed', ['build'], true],
+    ]);
+    const ok = show('checks', auto!).details!;
+    expect(ok.groups.map((g) => g.label)).toEqual(['Passed', 'Skipped']);
+  });
+
   it('cancelled checks are grey, not failing', () => {
     const pr = { ...auto!, statusCheckRollup: { state: 'FAILURE', contexts: { totalCount: 13,
       checkRunCountsByState: [{ state: 'CANCELLED', count: 1 }, { state: 'SKIPPED', count: 10 }, { state: 'SUCCESS', count: 1 }, { state: 'NEUTRAL', count: 1 }, { state: 'COMPLETED', count: 0 }],
@@ -90,8 +104,8 @@ describe('differentiator fields', () => {
     const c = show('checks', pr);
     expect(c.text).toBe('12/13');
     expect(c.tone).toBe('muted');
-    expect(c.title).toContain('Cancelled: Gate integrity');
-    expect(c.title).not.toContain('Failing');
+    expect(c.details!.groups.map((g) => g.label)).toEqual(['Cancelled']);
+    expect(c.details!.heading).toBe('12/13 passed');
     expect(f('checks').groupValue!(f('checks').get(pr))).toBe('Some cancelled');
   });
 

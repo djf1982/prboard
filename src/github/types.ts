@@ -60,8 +60,8 @@ export interface PullRequestNode {
 }
 
 export type CheckContext =
-  | { __typename: 'CheckRun'; name: string; status: string; conclusion: string | null }
-  | { __typename: 'StatusContext'; context: string; state: string };
+  | { __typename: 'CheckRun'; name: string; status: string; conclusion: string | null; detailsUrl?: string | null }
+  | { __typename: 'StatusContext'; context: string; state: string; targetUrl?: string | null };
 
 export interface RateLimit {
   cost: number;
