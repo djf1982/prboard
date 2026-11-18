@@ -8,7 +8,7 @@ routes = [{ pattern = "prboard-auth.17things.co.uk", custom_domain = true }]
 enabled = false
 
 [vars]
-GITHUB_CLIENT_ID = ""
-ALLOWED_ORIGINS = "https://djf1982.github.io http://localhost:5173"
-REDIRECT_URIS = "https://djf1982.github.io/prboard/ http://localhost:5173/"
+GITHUB_CLIENT_ID = "Iv23liBq3WZ7XmJZY8lM"
+ALLOWED_ORIGINS = "https://djf1982.github.io"
+REDIRECT_URIS = "https://djf1982.github.io/prboard/"
 # Secret, set with: npx wrangler secret put GITHUB_CLIENT_SECRET
