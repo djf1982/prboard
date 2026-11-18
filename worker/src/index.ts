@@ -50,6 +50,13 @@ export async function handle(request: Request, env: Env, fetchImpl: typeof fetch
   const url = new URL(request.url);
 
   if (request.method === 'OPTIONS') return new Response(null, { status: allowed ? 204 : 403, headers });
+  // A person opening the address in a browser: explain, instead of a bare 403.
+  if (request.method === 'GET' && url.pathname === '/') {
+    return new Response('prboard sign-in service. It only handles sign-in requests from https://djf1982.github.io/prboard/. Open that page instead.\n', {
+      status: 200,
+      headers: { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' },
+    });
+  }
   if (!allowed) return json({ error: 'origin_not_allowed' }, 403, headers);
   if (request.method !== 'POST') return json({ error: 'method_not_allowed' }, 405, headers);
   if (url.pathname !== '/token' && url.pathname !== '/refresh') return json({ error: 'not_found' }, 404, headers);

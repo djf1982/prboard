@@ -30,6 +30,12 @@ describe('token exchange worker', () => {
     expect(bad.headers.get('Access-Control-Allow-Origin')).toBeNull();
   });
 
+  it('explains itself to a browser visit', async () => {
+    const res = await handle(new Request('https://auth.example.workers.dev/'), env);
+    expect(res.status).toBe(200);
+    expect(await res.text()).toContain('sign-in service');
+  });
+
   it('rejects other origins, methods, paths and content types', async () => {
     expect((await handle(req('/token', {}, { origin: 'https://evil.test' }), env)).status).toBe(403);
     expect((await handle(req('/token', {}, { origin: null }), env)).status).toBe(403);
