@@ -56,6 +56,17 @@ describe('only-used fields', () => {
   });
 });
 
+describe('cellFor permission state', () => {
+  it('shows no access only when the refused field has no value', async () => {
+    const { cellFor, resolveColumn } = await import('../src/views/columns');
+    const col = resolveColumn('checks')!;
+    const base = { id: 'x', url: 'https://github.com/a/b/pull/1' };
+    expect(cellFor(col, { pr: { ...base, statusCheckRollup: null }, denied: new Set(['statusCheckRollup']), computed: new Map() }).kind).toBe('forbidden');
+    const partial = { ...base, statusCheckRollup: { state: 'SUCCESS', contexts: { totalCount: 1, checkRunCountsByState: [{ state: 'SUCCESS', count: 1 }], statusContextCountsByState: [], nodes: [] } } };
+    expect(cellFor(col, { pr: partial, denied: new Set(['statusCheckRollup']), computed: new Map() }).kind).toBe('value');
+  });
+});
+
 describe('topLevelKeys', () => {
   it('reads names and aliases at the top level only', () => {
     expect(topLevelKeys('a b: c(x: 1) { d e } f { g }')).toEqual(['a', 'b', 'f']);

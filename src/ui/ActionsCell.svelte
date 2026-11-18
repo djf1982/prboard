@@ -14,12 +14,34 @@
   const actions = $derived(availableActions(pr));
   let busy = $state(false);
   let error = $state<string | null>(null);
-  let menu: HTMLDetailsElement | undefined = $state();
+  let menu: HTMLElement | undefined = $state();
+  let trigger: HTMLButtonElement | undefined = $state();
+  let top = $state(0);
+  let left = $state(0);
+  // A stable, safe element id for popovertarget.
+  const menuId = $derived('actions-' + pr.id.replace(/[^A-Za-z0-9_-]/g, ''));
+
+  // The menu lives in the browser's top layer (Popover API), so table cells cannot clip it.
+  function place(e: Event) {
+    if ((e as ToggleEvent).newState !== 'open' || !trigger || !menu) return;
+    const r = trigger.getBoundingClientRect();
+    const width = Math.max(menu.offsetWidth, 220);
+    left = Math.max(8, Math.min(r.right - width, window.innerWidth - width - 8));
+    const below = r.bottom + 4;
+    top = below + menu.offsetHeight > window.innerHeight - 8 ? Math.max(8, r.top - menu.offsetHeight - 4) : below;
+  }
+
+  $effect(() => {
+    const close = () => menu?.hidePopover?.();
+    window.addEventListener('scroll', close, true);
+    window.addEventListener('resize', close);
+    return () => { window.removeEventListener('scroll', close, true); window.removeEventListener('resize', close); };
+  });
 
   // Actions run only from a click. Configs can never start one.
   async function run(action: ActionDef, choice?: string) {
     if (!client || busy) return;
-    if (menu) menu.open = false;
+    menu?.hidePopover?.();
     const prompt = action.confirm?.(pr, choice);
     if (prompt && !window.confirm(prompt)) return;
     busy = true;
@@ -41,8 +63,8 @@
 </script>
 
 {#if actions.length}
-  <details class="actions" bind:this={menu}>
-    <summary aria-label="Actions">{busy ? 'Working…' : 'Actions ▾'}</summary>
+  <button class="trigger" bind:this={trigger} popovertarget={menuId} aria-haspopup="menu" disabled={busy}>{busy ? 'Working…' : 'Actions ▾'}</button>
+  <div class="menu" id={menuId} popover="auto" bind:this={menu} ontoggle={place} style:top="{top}px" style:left="{left}px">
     <ul role="menu">
       {#each actions as action (action.id)}
         {@const choices = action.choices?.(pr) ?? []}
@@ -60,23 +82,22 @@
         {/if}
       {/each}
     </ul>
-  </details>
+  </div>
 {:else}
   <span class="muted">—</span>
 {/if}
 {#if error}<span class="err" title={error}>failed</span>{/if}
 
 <style>
-  .actions { position: relative; display: inline-block; }
-  summary { cursor: pointer; list-style: none; font-size: 12px; padding: 1px 6px; border: 1px solid var(--border); border-radius: 4px; user-select: none; }
-  summary::-webkit-details-marker { display: none; }
-  ul { position: absolute; z-index: 20; right: 0; margin: 4px 0 0; padding: 4px; list-style: none; background: var(--bg-raised); border: 1px solid var(--border); border-radius: 6px; box-shadow: var(--shadow); min-width: 200px; }
+  .trigger { font-size: 12px; padding: 1px 6px; border: 1px solid var(--border); border-radius: 4px; background: var(--bg-raised); cursor: pointer; }
+  .menu { position: fixed; inset: auto; margin: 0; padding: 4px; background: var(--bg-raised); color: var(--fg); border: 1px solid var(--border); border-radius: 6px; box-shadow: var(--shadow); min-width: 220px; }
+  ul { margin: 0; padding: 0; list-style: none; }
   li { display: block; }
   li.group { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; padding: 4px 6px; }
   .group-label { width: 100%; font-size: 12px; color: var(--muted); }
   li.group button { width: auto; border: 1px solid var(--border); }
-  button { display: block; width: 100%; text-align: left; background: none; border: 0; padding: 4px 8px; border-radius: 4px; font: inherit; color: inherit; cursor: pointer; }
-  button:hover { background: var(--hover); }
+  ul button { display: block; width: 100%; text-align: left; background: none; border: 0; padding: 4px 8px; border-radius: 4px; font: inherit; color: inherit; cursor: pointer; }
+  ul button:hover { background: var(--hover); }
   .err { color: var(--bad); font-size: 12px; margin-left: 4px; }
   .muted { color: var(--muted); }
 </style>

@@ -126,7 +126,9 @@ export function groupValueOf(col: ResolvedColumn, row: Row): string {
 export type CellState = { kind: 'value'; cell: Cell } | { kind: 'forbidden'; requires: Permission[] } | { kind: 'loading' };
 
 export function cellFor(col: ResolvedColumn, row: Row): CellState {
-  if (col.keys.some((k) => row.denied.has(k))) return { kind: 'forbidden', requires: col.requires };
+  // Mark a cell as forbidden only when GitHub refused the field and returned no value for it.
+  const pr = row.pr as unknown as Record<string, unknown>;
+  if (col.keys.some((k) => row.denied.has(k) && (pr[k] === null || pr[k] === undefined))) return { kind: 'forbidden', requires: col.requires };
   if (col.kind === 'computed') {
     const c = row.computed.get(computedKey(col.spec));
     return c ? { kind: 'value', cell: c } : { kind: 'loading' };
