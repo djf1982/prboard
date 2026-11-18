@@ -19,4 +19,7 @@ npx wrangler secret put GITHUB_CLIENT_SECRET
 npx wrangler deploy
 ```
 
+The prboard deployment runs on the 17 Things Cloudflare account at `https://prboard-auth.17things.co.uk`.
+With several accounts, set `CLOUDFLARE_ACCOUNT_ID` when you run wrangler.
+
 Then build the site with `PRBOARD_OAUTH_CLIENT_ID`, `PRBOARD_OAUTH_EXCHANGE_URL` (the Worker URL) and `PRBOARD_APP_SLUG`.

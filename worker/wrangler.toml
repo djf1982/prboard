@@ -1,7 +1,8 @@
 name = "prboard-auth"
 main = "src/index.ts"
 compatibility_date = "2026-11-01"
-workers_dev = true
+workers_dev = false
+routes = [{ pattern = "prboard-auth.17things.co.uk", custom_domain = true }]
 # No logs of request bodies: the Worker never logs. Keep observability off.
 [observability]
 enabled = false
