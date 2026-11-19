@@ -1,22 +1,57 @@
-import { defineField, EMPTY, type FieldDef, type Tone } from './types';
+import { defineField, EMPTY, type FieldDef, type IconId, type Tone } from './types';
 import { shortDate, titleCase } from './format';
 import type { PullRequestNode } from '../github/types';
 
 type AutoMerge = PullRequestNode['autoMergeRequest'];
 
-const MERGE_STATE_TONE: Record<string, Tone> = {
-  CLEAN: 'good', HAS_HOOKS: 'good', UNSTABLE: 'warn', BEHIND: 'warn', BLOCKED: 'warn', DIRTY: 'bad', DRAFT: 'muted', UNKNOWN: 'muted',
-};
-const MERGE_STATE_HELP: Record<string, string> = {
-  CLEAN: 'Mergeable, and all requirements pass.',
-  HAS_HOOKS: 'Mergeable with passing commit status and pre-receive hooks.',
-  UNSTABLE: 'Mergeable, but some non-required checks fail.',
-  BEHIND: 'The head branch is out of date with the base.',
-  BLOCKED: 'Blocked by branch protection (reviews or required checks).',
-  DIRTY: 'Merge conflicts, or the merge commit cannot be created.',
-  DRAFT: 'Blocked because the pull request is a draft.',
-  UNKNOWN: 'GitHub is still computing the state.',
-};
+export interface MergeStatus {
+  /** Short text for the cell, also the group name. */
+  label: string;
+  tone: Tone;
+  icon?: IconId;
+  /** Hover text: what the status means and what to do. */
+  help: string;
+}
+
+const FAILING_ROLLUP = new Set(['FAILURE', 'ERROR']);
+const PENDING_ROLLUP = new Set(['PENDING', 'EXPECTED']);
+
+/**
+ * Turns GitHub's mergeStateStatus into a plain status with a reason.
+ * GitHub reports BLOCKED for many causes, so this also reads mergeable,
+ * reviewDecision and the check rollup to say which one applies.
+ */
+export function mergeStatus(pr: PullRequestNode): MergeStatus | undefined {
+  const s = pr.mergeStateStatus;
+  if (!s) return undefined;
+  const reported = ` (GitHub reports ${s.toLowerCase()}.)`;
+  // GitHub now reports BLOCKED (not DRAFT) for drafts, so read isDraft too.
+  if (pr.isDraft || s === 'DRAFT')
+    return { label: 'draft', tone: 'muted', icon: 'draft', help: 'This pull request is a draft. Mark it ready for review to merge it.' + reported };
+  if (s === 'DIRTY' || pr.mergeable === 'CONFLICTING')
+    return { label: 'conflicts', tone: 'bad', icon: 'alert', help: 'The branch has merge conflicts with the base branch. Resolve them to merge.' + reported };
+  if (s === 'BEHIND')
+    return { label: 'out of date', tone: 'warn', icon: 'branch', help: 'The base branch has new commits. Update the branch to merge.' + reported };
+  if (s === 'BLOCKED') {
+    const rollup = pr.statusCheckRollup?.state;
+    const reasons: { label: string; tone: Tone; icon: IconId; why: string }[] = [];
+    if (pr.reviewDecision === 'CHANGES_REQUESTED') reasons.push({ label: 'changes requested', tone: 'bad', icon: 'x', why: 'A reviewer requested changes.' });
+    if (rollup && FAILING_ROLLUP.has(rollup)) reasons.push({ label: 'checks failing', tone: 'bad', icon: 'x', why: 'Some checks fail.' });
+    if (pr.reviewDecision === 'REVIEW_REQUIRED') reasons.push({ label: 'needs review', tone: 'warn', icon: 'eye', why: 'The pull request needs an approving review.' });
+    if (rollup && PENDING_ROLLUP.has(rollup)) reasons.push({ label: 'checks running', tone: 'warn', icon: 'clock', why: 'Checks are still running.' });
+    const first = reasons[0];
+    if (!first)
+      return { label: 'blocked', tone: 'warn', icon: 'alert', help: 'A branch protection rule blocks the merge, for example required checks that have not started, unresolved conversations or signed commits.' + reported };
+    return { label: first.label, tone: first.tone, icon: first.icon, help: reasons.map((r) => r.why).join(' ') + ' Branch protection blocks the merge until this changes.' + reported };
+  }
+  if (s === 'UNSTABLE')
+    return { label: 'ready', tone: 'warn', icon: 'alert', help: 'You can merge. Some checks that are not required fail.' + reported };
+  if (s === 'CLEAN' || s === 'HAS_HOOKS')
+    return { label: 'ready', tone: 'good', icon: 'check', help: 'You can merge. All requirements pass.' + reported };
+  if (s === 'UNKNOWN')
+    return { label: 'checking', tone: 'muted', icon: 'clock', help: 'GitHub has not calculated the merge state yet. It does this in the background after a push or a change to the base branch. Refresh in a minute.' };
+  return { label: titleCase(s).toLowerCase(), tone: 'neutral', help: `GitHub reports ${s.toLowerCase()}.` };
+}
 
 export const mergeFields: FieldDef[] = [
   defineField<AutoMerge>({
@@ -37,17 +72,13 @@ export const mergeFields: FieldDef[] = [
     },
     requires: ['Pull requests: read'],
   }),
-  defineField<string | undefined>({
-    id: 'mergeState', label: 'Merge state', description: 'mergeStateStatus: clean, blocked, behind, dirty, unstable, draft, …',
-    // GitHub now reports BLOCKED (not DRAFT) for drafts, so read isDraft too.
-    fragment: 'mergeStateStatus isDraft', width: 110,
-    get: (pr) => (pr.isDraft && pr.mergeStateStatus ? 'DRAFT' : pr.mergeStateStatus),
-    groupValue: (v) => (v ? titleCase(v) : 'Unknown'),
-    display: (v, pr) => {
-      if (!v) return EMPTY;
-      const title = v === 'DRAFT' && pr.mergeStateStatus !== 'DRAFT' ? `${MERGE_STATE_HELP.DRAFT} (GitHub reports ${pr.mergeStateStatus?.toLowerCase()}.)` : MERGE_STATE_HELP[v];
-      return { text: titleCase(v).toLowerCase(), tone: MERGE_STATE_TONE[v] ?? 'neutral', title, pill: true };
-    },
+  defineField<MergeStatus | undefined>({
+    id: 'mergeState', label: 'Merge state',
+    description: 'Whether the pull request can merge, and if not, why: conflicts, out of date, checks running or failing, needs review, draft.',
+    fragment: 'mergeStateStatus mergeable isDraft reviewDecision statusCheckRollup { state }', width: 140,
+    get: mergeStatus,
+    groupValue: (v) => (v ? v.label[0]!.toUpperCase() + v.label.slice(1) : 'Unknown'),
+    display: (v) => (v ? { text: v.label, tone: v.tone, icon: v.icon, title: v.help, pill: true } : EMPTY),
     requires: ['Pull requests: read'],
   }),
   defineField<string | undefined>({

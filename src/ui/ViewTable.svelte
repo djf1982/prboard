@@ -19,6 +19,7 @@
   import type { ViewConfig, ColumnEntry } from '../config/schema';
   import { cellFor, groupValueOf, sortValueOf, type ResolvedColumn, type Row } from '../views/columns';
   import CellView from './CellView.svelte';
+  import Icon from './Icon.svelte';
   import ActionsCell from './ActionsCell.svelte';
   import type { Client } from '../github/client';
 
@@ -159,6 +160,8 @@
     onViewChange((v) => { v.groupBy = v.groupBy === id ? undefined : id; });
   }
 
+  // The title shows the number after it, unless a number column already shows it.
+  const showsNumber = $derived(columns.some((c) => c.id === 'number' && !c.hidden));
   const visibleCount = $derived(columns.filter((c) => !c.hidden).length);
   const permissionHint = (req: string[]) => `Your token cannot read this. It needs: ${req.join(', ')}.`;
 </script>
@@ -189,7 +192,7 @@
                   onclick={header.column.getToggleSortingHandler()}
                 >
                   {col?.label ?? header.column.id}
-                  {#if col?.cost === 'high'}<span class="cost" title="Expensive field: uses more API rate limit">$</span>{/if}
+                  {#if col?.cost === 'high'}<span class="cost" title="Expensive field: uses more API rate limit"><Icon id="gauge" /></span>{/if}
                   {#if sorted}
                     <span class="arrow">{sorted === 'asc' ? '▲' : '▼'}{#if view.sort.length > 1}<sub>{header.column.getSortIndex() + 1}</sub>{/if}</span>
                   {/if}
@@ -237,7 +240,7 @@
                 {:else}
                   {@const state = cellFor(col, row.original)}
                   {#if state.kind === 'value'}
-                    <CellView cell={state.cell} />
+                    <CellView cell={col.id === 'title' && showsNumber ? { ...state.cell, meta: undefined } : state.cell} />
                   {:else if state.kind === 'forbidden'}
                     <span class="forbidden" title={permissionHint(state.requires)}>no access</span>
                   {:else}
@@ -269,7 +272,7 @@
   .sort:hover:not(:disabled) { color: var(--fg); }
   .arrow { color: var(--accent); margin-left: 4px; }
   .arrow sub { font-size: 9px; }
-  .cost { color: var(--warn); margin-left: 4px; font-weight: 700; }
+  .cost { color: var(--warn); margin-left: 4px; display: inline-flex; }
   /* Hover tools float over the label, so they never take its space. */
   .tools { position: absolute; right: -4px; display: inline-flex; gap: 1px; padding-left: 12px; opacity: 0; pointer-events: none;
     background: linear-gradient(to right, transparent, var(--bg-head) 10px); transition: opacity .12s; }

@@ -115,9 +115,30 @@ describe('differentiator fields', () => {
     expect(c.title).toContain('GitHub reports blocked');
   });
 
+  it('mergeState gives the reason for blocked', () => {
+    const blocked = { ...auto!, mergeStateStatus: 'BLOCKED', mergeable: 'MERGEABLE' as const, reviewDecision: null };
+    const rollup = (state: string) => ({ state, contexts: { totalCount: 0, checkRunCountsByState: [], statusContextCountsByState: [], nodes: [] } });
+    expect(show('mergeState', { ...blocked, statusCheckRollup: rollup('PENDING') })).toMatchObject({ text: 'checks running', tone: 'warn', icon: 'clock' });
+    expect(show('mergeState', { ...blocked, statusCheckRollup: rollup('FAILURE') })).toMatchObject({ text: 'checks failing', tone: 'bad' });
+    expect(show('mergeState', { ...blocked, reviewDecision: 'CHANGES_REQUESTED', statusCheckRollup: rollup('PENDING') }).text).toBe('changes requested');
+    const both = show('mergeState', { ...blocked, reviewDecision: 'REVIEW_REQUIRED', statusCheckRollup: rollup('PENDING') });
+    expect(both.text).toBe('needs review');
+    expect(both.title).toContain('Checks are still running.');
+    expect(show('mergeState', { ...blocked, statusCheckRollup: rollup('SUCCESS') }).text).toBe('blocked');
+  });
+
+  it('mergeState shows conflicts, out of date, ready and checking', () => {
+    expect(show('mergeState', { ...auto!, mergeStateStatus: 'BLOCKED', mergeable: 'CONFLICTING' })).toMatchObject({ text: 'conflicts', tone: 'bad', icon: 'alert' });
+    expect(show('mergeState', { ...auto!, mergeStateStatus: 'BEHIND' }).text).toBe('out of date');
+    expect(show('mergeState', { ...auto!, mergeStateStatus: 'CLEAN' })).toMatchObject({ text: 'ready', tone: 'good' });
+    expect(show('mergeState', { ...auto!, mergeStateStatus: 'UNSTABLE' })).toMatchObject({ text: 'ready', tone: 'warn' });
+    expect(show('mergeState', { ...auto!, mergeStateStatus: 'UNKNOWN' }).text).toBe('checking');
+    expect(f('mergeState').groupValue!(f('mergeState').get(failing!))).toBe('Conflicts');
+  });
+
   it('mergeState and mergeable', () => {
-    expect(show('mergeState', auto!)).toMatchObject({ text: 'blocked', tone: 'warn' });
-    expect(show('mergeState', failing!)).toMatchObject({ text: 'dirty', tone: 'bad' });
+    expect(show('mergeState', auto!)).toMatchObject({ text: 'needs review', tone: 'warn' });
+    expect(show('mergeState', failing!)).toMatchObject({ text: 'conflicts', tone: 'bad' });
     expect(show('mergeable', failing!)).toMatchObject({ text: 'conflicting', tone: 'bad' });
   });
 

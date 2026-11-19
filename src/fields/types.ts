@@ -3,7 +3,7 @@ import type { PullRequestNode } from '../github/types';
 export type Tone = 'neutral' | 'good' | 'warn' | 'bad' | 'muted';
 
 /** Ids from the fixed icon set in ui/Icon.svelte. */
-export type IconId = 'check' | 'x' | 'dot' | 'clock' | 'merge' | 'draft' | 'comment' | 'alert' | 'branch' | 'queue' | 'eye';
+export type IconId = 'check' | 'x' | 'dot' | 'clock' | 'merge' | 'draft' | 'comment' | 'alert' | 'branch' | 'queue' | 'eye' | 'gauge';
 
 /** Framework-agnostic cell model. Fields never produce markup. */
 export interface Cell {

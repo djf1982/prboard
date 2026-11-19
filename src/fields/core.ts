@@ -5,9 +5,9 @@ const PR_READ = ['Pull requests: read', 'Metadata: read'] as const;
 
 export const coreFields: FieldDef[] = [
   defineField<number | undefined>({
-    id: 'number', label: '#', description: 'Pull request number.', fragment: 'number', width: 70,
+    id: 'number', label: '#', description: 'Pull request number.', fragment: 'number', width: 72,
     get: (pr) => pr.number,
-    display: (v, pr) => (v === undefined ? EMPTY : { text: `#${v}`, href: pr.url }),
+    display: (v, pr) => (v === undefined ? EMPTY : { text: `#${v}`, href: pr.url, tone: 'muted' }),
     requires: [...PR_READ],
   }),
   defineField<string>({
