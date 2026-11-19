@@ -6,7 +6,7 @@ type Decision = NonNullable<import('../github/types').PullRequestNode['reviewDec
 export const reviewFields: FieldDef[] = [
   defineField<Decision>({
     id: 'reviewDecision', label: 'Review', description: 'Overall review decision: approved, changes requested or review required.',
-    fragment: 'reviewDecision', width: 140,
+    fragment: 'reviewDecision', width: 184,
     get: (pr) => pr.reviewDecision,
     sortValue: (v) => (v === 'APPROVED' ? 0 : v === 'REVIEW_REQUIRED' ? 1 : v === 'CHANGES_REQUESTED' ? 2 : 3),
     groupValue: (v) => (v ? titleCase(v) : 'No review needed'),

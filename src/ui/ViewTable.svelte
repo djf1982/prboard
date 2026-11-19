@@ -19,8 +19,8 @@
   import type { ViewConfig, ColumnEntry } from '../config/schema';
   import { cellFor, groupValueOf, sortValueOf, type ResolvedColumn, type Row } from '../views/columns';
   import CellView from './CellView.svelte';
-  import Icon from './Icon.svelte';
   import ActionsCell from './ActionsCell.svelte';
+  import Icon from './Icon.svelte';
   import type { Client } from '../github/client';
 
   let {
@@ -55,6 +55,7 @@
     expandedRowModel: createExpandedRowModel(),
   });
 
+  const MIN_W = 50;
   const colById = $derived(new Map(columns.map((c) => [c.id, c])));
 
   function compare(a: unknown, b: unknown): number {
@@ -75,9 +76,10 @@
     sortUndefined: 'last' as const,
     enableSorting: c.kind !== 'actions',
     enableGrouping: c.kind !== 'actions',
-    enableResizing: true,
+    // The title column takes the space left over, so it has no fixed width to drag.
+    enableResizing: c.id !== 'title',
     size: c.width,
-    minSize: 50,
+    minSize: MIN_W,
     maxSize: 2000,
   }));
 
@@ -88,6 +90,12 @@
   const columnOrder = $derived(columns.map((c) => c.id));
   const columnSizing = $derived(Object.fromEntries(columns.map((c) => [c.id, c.width])));
   let expanded = $state<ExpandedState>(true);
+  // Transient drag state, held here so the guide line can follow the pointer.
+  let resizing = $state<{ columnSizingStart: [string, number][]; deltaOffset: number | null; deltaPercentage: number | null; isResizingColumn: false | string; startOffset: number | null; startSize: number | null }>({
+    columnSizingStart: [], deltaOffset: null, deltaPercentage: null, isResizingColumn: false, startOffset: null, startSize: null,
+  });
+  let guideBase = $state(0);
+
 
   const resolve = <T,>(u: Updater<T>, prev: T): T => (typeof u === 'function' ? (u as (p: T) => T)(prev) : u);
 
@@ -117,7 +125,9 @@
       get columnOrder() { return columnOrder; },
       get columnSizing() { return columnSizing; },
       get expanded() { return expanded; },
+      get columnResizing() { return resizing; },
     },
+    onColumnResizingChange: (u: Updater<typeof resizing>) => { resizing = resolve(u, resizing); },
     onSortingChange: (u: Updater<SortingState>) => {
       const next = resolve(u, sorting);
       onViewChange((v) => { v.sort = next.slice(0, 5).map((s) => ({ field: s.id, dir: s.desc ? 'desc' : 'asc' })); });
@@ -152,6 +162,28 @@
     });
   }
 
+  function startResize(e: MouseEvent | TouchEvent, header: { getResizeHandler: () => (e: unknown) => void }) {
+    const th = (e.currentTarget as HTMLElement).closest('th');
+    if (th) guideBase = th.offsetLeft + th.offsetWidth - 1;
+    header.getResizeHandler()(e);
+  }
+
+  // Double-click on a handle goes back to the default width.
+  function resetWidth(id: string) {
+    onViewChange((v) => {
+      const i = v.columns.findIndex((c) => (typeof c === 'string' ? c : c.id) === id);
+      const cur = v.columns[i];
+      if (i < 0 || !cur || typeof cur === 'string') return;
+      const rest: Record<string, unknown> = { ...(cur as Record<string, unknown>) };
+      delete rest.width;
+      v.columns[i] = (Object.keys(rest).length === 1 ? rest.id : rest) as ColumnEntry;
+    });
+  }
+
+  const resizingCol = $derived(resizing.isResizingColumn ? colById.get(resizing.isResizingColumn) : undefined);
+  const guideWidth = $derived(resizingCol && resizing.startSize !== null ? Math.max(MIN_W, Math.round(resizing.startSize + (resizing.deltaOffset ?? 0))) : 0);
+  const guideLeft = $derived(resizing.startSize !== null ? guideBase + (guideWidth - resizing.startSize) : 0);
+
   function hide(id: string) {
     onViewChange((v) => setEntry(v, id, { hidden: true }));
   }
@@ -160,14 +192,26 @@
     onViewChange((v) => { v.groupBy = v.groupBy === id ? undefined : id; });
   }
 
+  // The title column takes the leftover space, so it counts only its minimum here.
+  // The table scrolls sideways only when the other columns truly do not fit.
+  const TITLE_MIN = 220;
+  function minWidth(): number {
+    let w = 0;
+    for (const h of table.getHeaderGroups()[0]?.headers ?? []) w += h.column.id === 'title' ? TITLE_MIN : h.getSize();
+    return w;
+  }
+
   // The title shows the number after it, unless a number column already shows it.
   const showsNumber = $derived(columns.some((c) => c.id === 'number' && !c.hidden));
   const visibleCount = $derived(columns.filter((c) => !c.hidden).length);
   const permissionHint = (req: string[]) => `Your token cannot read this. It needs: ${req.join(', ')}.`;
 </script>
 
-<div class="wrap">
-  <table class="grid" style:min-width="{table.getTotalSize()}px">
+<div class="wrap" class:is-resizing={!!resizing.isResizingColumn}>
+  {#if resizingCol}
+    <div class="guide" style:left="{guideLeft}px" aria-hidden="true"><span class="guide-label">{guideWidth}px</span></div>
+  {/if}
+  <table class="grid" style:min-width="{minWidth()}px">
     <thead>
       {#each table.getHeaderGroups() as group (group.id)}
         <tr>
@@ -177,40 +221,46 @@
             <th
               style:width={header.column.id === 'title' ? undefined : `${header.getSize()}px`}
               class:flex={header.column.id === 'title'}
-              draggable="true"
               class:drag-over={dragId && dragId !== header.column.id}
-              ondragstart={(e) => { dragId = header.column.id; e.dataTransfer?.setData('text/plain', header.column.id); }}
               ondragover={(e) => e.preventDefault()}
               ondrop={(e) => { e.preventDefault(); drop(header.column.id); }}
               aria-sort={sorted === 'asc' ? 'ascending' : sorted === 'desc' ? 'descending' : 'none'}
             >
-              <div class="th">
+              <!-- Only the label area starts a reorder drag, so the resize handle never does. -->
+              <div class="th" class:th-actions={col?.kind === 'actions'} draggable="true" role="presentation"
+                ondragstart={(e) => { dragId = header.column.id; e.dataTransfer?.setData('text/plain', header.column.id); }}
+                ondragend={() => (dragId = null)}>
                 <button
                   class="sort"
+                  class:sr-label={col?.kind === 'actions'}
                   disabled={!header.column.getCanSort()}
                   title={col?.kind === 'field' ? col.field.description + ' (Shift-click to sort by more than one column)' : col?.label}
                   onclick={header.column.getToggleSortingHandler()}
                 >
-                  {col?.label ?? header.column.id}
-                  {#if col?.cost === 'high'}<span class="cost" title="Expensive field: uses more API rate limit"><Icon id="gauge" /></span>{/if}
+                  <span class="label-text">{col?.label ?? header.column.id}</span>
+                  {#if col?.cost === 'high'}<span class="cost" title="Expensive field: uses more API rate limit"><Icon id="gauge" size={12} /></span>{/if}
                   {#if sorted}
-                    <span class="arrow">{sorted === 'asc' ? '▲' : '▼'}{#if view.sort.length > 1}<sub>{header.column.getSortIndex() + 1}</sub>{/if}</span>
+                    <span class="arrow"><Icon id={sorted === 'asc' ? 'arrow-up' : 'arrow-down'} size={11} />{#if view.sort.length > 1}<sub>{header.column.getSortIndex() + 1}</sub>{/if}</span>
                   {/if}
                 </button>
                 <span class="tools">
                   {#if header.column.getCanGroup()}
-                    <button class="tool" class:on={view.groupBy === header.column.id} title="Group by this column" onclick={() => toggleGroup(header.column.id)}>⊞</button>
+                    <button class="tool" class:on={view.groupBy === header.column.id} title={view.groupBy === header.column.id ? 'Stop grouping' : 'Group by this column'} aria-label="Group by {col?.label}" onclick={() => toggleGroup(header.column.id)}><Icon id="group" size={12} /></button>
                   {/if}
-                  <button class="tool" title="Hide column" onclick={() => hide(header.column.id)}>×</button>
+                  <button class="tool" title="Hide column" aria-label="Hide {col?.label}" onclick={() => hide(header.column.id)}><Icon id="eye-off" size={12} /></button>
                 </span>
               </div>
-              <!-- svelte-ignore a11y_no_static_element_interactions -->
-              <div
-                class="resizer"
-                class:resizing={header.column.getIsResizing()}
-                onmousedown={(e) => header.getResizeHandler()(e)}
-                ontouchstart={(e) => header.getResizeHandler()(e)}
-              ></div>
+              {#if header.column.getCanResize()}
+                <!-- svelte-ignore a11y_no_static_element_interactions -->
+                <div
+                  class="resizer"
+                  class:resizing={header.column.getIsResizing()}
+                  title="Drag to resize. Double-click to reset."
+                  onmousedown={(e) => startResize(e, header)}
+                  ontouchstart={(e) => startResize(e, header)}
+                  ondblclick={() => resetWidth(header.column.id)}
+                ></div>
+              {/if}
             </th>
           {/each}
         </tr>
@@ -222,7 +272,7 @@
           <tr class="group-row">
             <td colspan={visibleCount}>
               <button class="group-toggle" onclick={row.getToggleExpandedHandler()} aria-expanded={row.getIsExpanded()}>
-                <span class="caret">{row.getIsExpanded() ? '▾' : '▸'}</span>
+                <span class="caret" class:open={row.getIsExpanded()}><Icon id="chevron" size={12} /></span>
                 <span class="group-name">{String(row.groupingValue ?? '')}</span>
                 <span class="count">{row.subRows.length}</span>
               </button>
@@ -242,9 +292,9 @@
                   {#if state.kind === 'value'}
                     <CellView cell={col.id === 'title' && showsNumber ? { ...state.cell, meta: undefined } : state.cell} />
                   {:else if state.kind === 'forbidden'}
-                    <span class="forbidden" title={permissionHint(state.requires)}>no access</span>
+                    <span class="forbidden" title={permissionHint(state.requires)}><Icon id="lock" size={12} /> no access</span>
                   {:else}
-                    <span class="muted">…</span>
+                    <span class="loading-dot" aria-label="loading"></span>
                   {/if}
                 {/if}
               </td>
@@ -257,38 +307,61 @@
 </div>
 
 <style>
-  .wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 10px; background: var(--bg-raised); box-shadow: var(--card-shadow); }
-  .grid { width: 100%; border-collapse: separate; border-spacing: 0; table-layout: fixed; }
-  th, td { padding: 0 12px; height: 40px; border-bottom: 1px solid var(--border-soft); overflow: hidden; text-align: left; vertical-align: middle; }
-  td { white-space: nowrap; }
+  .wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--r-lg); background: var(--bg-raised); box-shadow: var(--card-shadow); }
+  .grid { width: 100%; border-collapse: separate; border-spacing: 0; table-layout: fixed; font-variant-numeric: tabular-nums; }
+  th, td { padding: 0 10px; height: 44px; border-bottom: 1px solid var(--border-soft); overflow: hidden; text-align: left; vertical-align: middle; }
+  th:first-child, td:first-child { padding-left: 16px; }
+  th:last-child, td:last-child { padding-right: 12px; }
+  td { white-space: nowrap; transition: background-color .08s; }
   tbody tr:last-child td { border-bottom: 0; }
-  th { position: sticky; top: 0; z-index: 2; height: 34px; background: var(--bg-head); font-weight: 600; font-size: 11px;
-    letter-spacing: .04em; text-transform: uppercase; color: var(--muted); user-select: none; }
+  th { position: sticky; top: 0; z-index: 2; height: 36px; background: var(--bg-head); font-weight: 500; font-size: 12px;
+    color: var(--muted); user-select: none; border-bottom-color: var(--border); }
   th.drag-over:hover { box-shadow: inset 2px 0 0 var(--accent); }
   .th { display: flex; align-items: center; position: relative; min-width: 0; }
-  .sort { all: unset; flex: 1; min-width: 0; cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .sort { all: unset; display: inline-flex; align-items: center; gap: 4px; flex: 1; min-width: 0; cursor: pointer; white-space: nowrap; }
+  .label-text { overflow: hidden; text-overflow: ellipsis; min-width: 0; }
   .sort:disabled { cursor: default; }
   .sort:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
   .sort:hover:not(:disabled) { color: var(--fg); }
-  .arrow { color: var(--accent); margin-left: 4px; }
-  .arrow sub { font-size: 9px; }
-  .cost { color: var(--warn); margin-left: 4px; display: inline-flex; }
+  .sr-label .label-text { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  .arrow { display: inline-flex; align-items: center; color: var(--accent); flex: none; }
+  .arrow sub { font-size: 9px; font-weight: 600; margin-left: 1px; }
+  .cost { color: var(--warn); flex: none; display: inline-flex; align-items: center; }
   /* Hover tools float over the label, so they never take its space. */
-  .tools { position: absolute; right: -4px; display: inline-flex; gap: 1px; padding-left: 12px; opacity: 0; pointer-events: none;
-    background: linear-gradient(to right, transparent, var(--bg-head) 10px); transition: opacity .12s; }
+  .tools { position: absolute; right: -2px; display: inline-flex; gap: 2px; padding-left: 16px; opacity: 0; pointer-events: none;
+    background: linear-gradient(to right, transparent, var(--bg-head) 12px); transition: opacity .12s; }
   th:hover .tools, th:focus-within .tools { opacity: 1; pointer-events: auto; }
-  .tool { all: unset; cursor: pointer; color: var(--muted); padding: 2px 4px; border-radius: 4px; font-size: 12px; line-height: 1; }
-  .tool:hover, .tool.on { color: var(--accent); background: var(--hover); }
-  .resizer { position: absolute; right: 0; top: 6px; bottom: 6px; width: 4px; cursor: col-resize; touch-action: none; border-radius: 2px; }
-  th:hover .resizer { background: var(--border); }
-  .resizer:hover, .resizer.resizing { background: var(--accent) !important; }
+  .th-actions .tools { display: none; }
+  .tool { all: unset; cursor: pointer; color: var(--muted); width: 20px; height: 20px; display: grid; place-items: center; border-radius: 4px; }
+  .tool:hover { color: var(--fg); background: var(--hover); }
+  .tool.on { color: var(--accent); background: var(--accent-soft); }
+  .tool:focus-visible { outline: 2px solid var(--accent); }
+  /* A wide, invisible hit area with a thin line in the middle. */
+  .resizer { position: absolute; right: 0; top: 0; bottom: 0; width: 9px; cursor: col-resize; touch-action: none; z-index: 3; }
+  .resizer::after { content: ''; position: absolute; left: 8px; top: 9px; bottom: 9px; width: 1px; background: var(--border); transition: background-color .12s, top .12s, bottom .12s; }
+  th:hover .resizer::after { background: var(--border-strong); }
+  .resizer:hover::after, .resizer.resizing::after { background: var(--accent); top: 4px; bottom: 4px; width: 2px; left: 7px; }
+  th { overflow: visible; }
+  th .th { overflow: hidden; }
+  .wrap { position: relative; scrollbar-width: thin; scrollbar-color: var(--border-strong) transparent; }
+  .wrap::-webkit-scrollbar { height: 8px; }
+  .wrap::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 4px; border: 2px solid var(--bg-raised); }
+  .wrap::-webkit-scrollbar-track { background: transparent; }
+  .wrap.is-resizing, .wrap.is-resizing * { cursor: col-resize !important; user-select: none; }
+  .guide { position: absolute; top: 0; bottom: 0; width: 2px; margin-left: -1px; background: var(--accent); z-index: 5; pointer-events: none; }
+  .guide-label { position: absolute; top: 8px; left: 6px; font-size: 11px; font-weight: 600; padding: 1px 6px; border-radius: 4px;
+    background: var(--accent); color: var(--accent-fg); white-space: nowrap; }
   tbody tr:not(.group-row):hover td { background: var(--row-hover); }
-  .group-row td { background: var(--bg-group); height: 34px; border-bottom: 1px solid var(--border-soft); }
-  .group-toggle { all: unset; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; font-weight: 600; font-size: 13px; }
+  .group-row td { background: var(--bg-group); height: 36px; border-bottom: 1px solid var(--border-soft); }
+  .group-toggle { all: unset; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; font-weight: 600; font-size: 12px; color: var(--fg-soft); }
+  .group-toggle:hover { color: var(--fg); }
   .group-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
-  .caret { width: 10px; color: var(--muted); font-size: 10px; }
-  .count { font-weight: 500; font-size: 11px; color: var(--muted); background: var(--chip-bg); border-radius: 999px; padding: 1px 7px; }
+  .caret { display: inline-flex; color: var(--muted); transition: transform .15s var(--ease); }
+  .caret.open { transform: rotate(90deg); }
+  .count { font-weight: 600; font-size: 11px; color: var(--muted); background: var(--chip-bg); border-radius: 999px; min-width: 18px; height: 18px; padding: 0 5px; display: inline-grid; place-items: center; }
   .actions-cell { text-align: right; overflow: visible; }
-  .forbidden { color: var(--warn); font-size: 12px; cursor: help; border-bottom: 1px dotted currentColor; }
+  .forbidden { display: inline-flex; align-items: center; gap: 4px; color: var(--warn); font-size: 12px; cursor: help; }
+  .loading-dot { display: inline-block; width: 24px; height: 8px; border-radius: 4px; background: var(--hover); animation: pulse 1.4s ease-in-out infinite; }
+  @keyframes pulse { 50% { opacity: .45; } }
   .muted { color: var(--muted); }
 </style>

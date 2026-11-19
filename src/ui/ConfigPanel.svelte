@@ -6,6 +6,7 @@
   import { encodeConfigHash } from '../share/url';
   import { loadRepoConfig, parseRepoRef, DEFAULT_REPO_PATH } from '../share/repo';
   import { scrubToken, type Client } from '../github/client';
+  import Icon from './Icon.svelte';
 
   let { store, client, token, onApplied }: { store: ConfigStore; client: Client | null; token: string | null; onApplied: () => void } = $props();
 
@@ -86,42 +87,68 @@
 </script>
 
 <div class="panel">
-  <p class="source">Active config: <strong>{describeSource(store.source)}</strong>{#if store.unsaved} (not saved){/if}</p>
-  <label for="cfg">Config (YAML or JSON)</label>
-  <textarea id="cfg" bind:value={text} spellcheck="false" rows="18"></textarea>
-  {#if errors.length}
-    <ul class="errors" role="alert">
-      {#each errors as e, i (i)}<li><code>{e.path}</code>: {e.message}</li>{/each}
-    </ul>
-  {/if}
-  <div class="row">
-    <button onclick={apply}>Apply</button>
-    <button onclick={reload}>Revert text</button>
-    <button onclick={() => download('yaml')}>Download YAML</button>
-    <button onclick={() => download('json')}>Download JSON</button>
-    <label class="file">Import file<input type="file" accept=".yml,.yaml,.json,application/json,text/yaml" onchange={importFile} /></label>
-    <button onclick={copyLink}>Copy share link</button>
+  <p class="source"><span class="dot" class:unsaved={store.unsaved}></span>Active: <strong>{describeSource(store.source)}</strong>{#if store.unsaved}<span class="muted"> · not saved</span>{/if}</p>
+
+  <div class="fieldset">
+    <label class="field-label" for="cfg">YAML or JSON</label>
+    <textarea id="cfg" bind:value={text} spellcheck="false" rows="18"></textarea>
+    {#if errors.length}
+      <ul class="errors" role="alert">
+        {#each errors as e, i (i)}<li><code>{e.path}</code> {e.message}</li>{/each}
+      </ul>
+    {/if}
+    <div class="row">
+      <button class="primary" onclick={apply}>Apply</button>
+      <button class="ghost" onclick={reload}>Revert</button>
+    </div>
   </div>
-  <form class="row" onsubmit={loadRepo}>
-    <input placeholder="owner/repo  (reads {DEFAULT_REPO_PATH})" bind:value={repo} spellcheck="false" />
-    <button type="submit" disabled={busy || !repo.trim()}>{busy ? 'Loading…' : 'Load from repo'}</button>
+
+  <div class="fieldset">
+    <span class="field-label">Share and back up</span>
+    <div class="grid2">
+      <button onclick={copyLink}><Icon id="link" /> Copy share link</button>
+      <label class="file"><Icon id="upload" /> Import file<input type="file" accept=".yml,.yaml,.json,application/json,text/yaml" onchange={importFile} /></label>
+      <button onclick={() => download('yaml')}><Icon id="download" /> YAML</button>
+      <button onclick={() => download('json')}><Icon id="download" /> JSON</button>
+    </div>
+  </div>
+
+  <form class="fieldset" onsubmit={loadRepo}>
+    <label class="field-label" for="cfg-repo">Load from a repository</label>
+    <div class="row">
+      <input id="cfg-repo" class="grow" placeholder="owner/repo" bind:value={repo} spellcheck="false" />
+      <button type="submit" disabled={busy || !repo.trim()}>{busy ? 'Loading…' : 'Load'}</button>
+    </div>
+    <p class="hint">Reads <code>{DEFAULT_REPO_PATH}</code>. Use <code>owner/repo@branch:path</code> for another file.</p>
   </form>
-  <div class="row">
+
+  {#if message}<p class="msg"><Icon id="check" size={13} /> {message}</p>{/if}
+
+  <div class="danger-zone">
     <button class="danger" onclick={() => { if (confirm('Replace your config with the built-in default?')) { store.resetToDefault(); reload(); onApplied(); } }}>Reset to default</button>
   </div>
-  {#if message}<p class="msg">{message}</p>{/if}
 </div>
 
 <style>
-  .panel { display: grid; gap: 8px; }
-  .source { margin: 0; font-size: 13px; }
-  label { font-weight: 600; font-size: 13px; }
-  textarea { width: 100%; font-family: var(--mono); font-size: 12px; box-sizing: border-box; resize: vertical; }
+  .panel { display: grid; gap: 20px; }
+  .source { margin: 0; font-size: 12px; color: var(--fg-soft); display: flex; align-items: center; gap: 6px; }
+  .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--good); }
+  .dot.unsaved { background: var(--warn); }
+  .muted { color: var(--muted); }
+  .fieldset { display: grid; gap: 8px; }
+  .fieldset .field-label { margin-bottom: 0; }
+  textarea { width: 100%; font-family: var(--mono); font-size: 12px; resize: vertical; background: var(--bg-sunken); tab-size: 2; white-space: pre; overflow: auto; }
   .row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
-  .row input { flex: 1; min-width: 200px; }
-  .file { font-weight: 400; border: 1px solid var(--border); border-radius: 6px; padding: 4px 10px; cursor: pointer; }
-  .file input { display: none; }
-  .errors { margin: 0; padding-left: 18px; color: var(--bad); font-size: 13px; }
-  .msg { margin: 0; font-size: 13px; color: var(--muted); }
-  .danger { color: var(--bad); }
+  .grow { flex: 1; min-width: 0; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .file { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 28px; padding: 0 10px; font-size: 13px; font-weight: 500;
+    color: var(--fg-soft); border: 1px solid var(--border); border-radius: var(--r-sm); background: var(--bg-raised); cursor: pointer; transition: background-color .12s, border-color .12s; }
+  .file:hover { background: var(--hover); border-color: var(--border-strong); color: var(--fg); }
+  .file:focus-within { box-shadow: var(--ring); border-color: var(--accent); }
+  .file input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+  .errors { margin: 0; padding: 8px 10px 8px 26px; color: var(--bad); font-size: 12px; background: var(--bad-bg); border-radius: var(--r-sm); }
+  .errors code { font-weight: 600; margin-right: 4px; }
+  .msg { margin: 0; font-size: 12px; color: var(--fg-soft); display: flex; gap: 6px; align-items: flex-start; }
+  .msg :global(.icon) { color: var(--good); margin-top: 2px; }
+  .danger-zone { padding-top: 16px; border-top: 1px solid var(--border-soft); }
 </style>

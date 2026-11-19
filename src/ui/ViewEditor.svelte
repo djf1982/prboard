@@ -2,6 +2,7 @@
   import type { ConfigStore } from '../config/store.svelte';
   import type { ViewConfig } from '../config/schema';
   import { ALL_FIELDS } from '../fields/registry';
+  import Icon from './Icon.svelte';
 
   let { store, view, onSelect }: { store: ConfigStore; view: ViewConfig; onSelect: (name: string) => void } = $props();
 
@@ -49,32 +50,43 @@
 </script>
 
 <form class="editor" onsubmit={save}>
-  <label>Name <input bind:value={name} maxlength="60" /></label>
-  <label>Search query
-    <input bind:value={query} maxlength="1000" spellcheck="false" />
-  </label>
-  <p class="hint">Any GitHub search, for example <code>is:open author:@me org:acme</code>. <code>is:pr</code> is added if missing.</p>
-  <label>Group by
-    <select value={view.groupBy ?? ''} onchange={(e) => { const g = (e.currentTarget as HTMLSelectElement).value; store.updateView(view.name, (v) => { v.groupBy = g || undefined; }); }}>
+  <div class="fieldset">
+    <label class="field-label" for="view-name">Name</label>
+    <input id="view-name" bind:value={name} maxlength="60" />
+  </div>
+  <div class="fieldset">
+    <label class="field-label" for="view-query">Search query</label>
+    <input id="view-query" class="mono" bind:value={query} maxlength="1000" spellcheck="false" />
+    <p class="hint">Any GitHub search, for example <code>is:open author:@me org:acme</code>. <code>is:pr</code> is added if missing.</p>
+  </div>
+  <div class="fieldset">
+    <label class="field-label" for="view-group">Group by</label>
+    <select id="view-group" value={view.groupBy ?? ''} onchange={(e) => { const g = (e.currentTarget as HTMLSelectElement).value; store.updateView(view.name, (v) => { v.groupBy = g || undefined; }); }}>
       <option value="">No grouping</option>
       {#each ALL_FIELDS as f (f.id)}<option value={f.id}>{f.label}</option>{/each}
     </select>
-  </label>
+  </div>
+  {#if error}<p class="error" role="alert"><Icon id="alert" size={13} /> {error}</p>{/if}
   <div class="row">
-    <button type="submit">Save view</button>
-    <button type="button" onclick={() => moveView(-1)}>Move left</button>
-    <button type="button" onclick={() => moveView(1)}>Move right</button>
-    <button type="button" onclick={addView}>Add view</button>
+    <button type="submit" class="primary">Save view</button>
+    <span class="spacer"></span>
+    <button type="button" class="ghost icon-only" title="Move view left" aria-label="Move view left" onclick={() => moveView(-1)}><Icon id="arrow-left" /></button>
+    <button type="button" class="ghost icon-only" title="Move view right" aria-label="Move view right" onclick={() => moveView(1)}><Icon id="arrow-right" /></button>
+  </div>
+  <div class="row split">
+    <button type="button" onclick={addView}><Icon id="plus" /> New view</button>
     <button type="button" class="danger" onclick={removeView}>Delete view</button>
   </div>
-  {#if error}<p class="error">{error}</p>{/if}
 </form>
 
 <style>
-  .editor { display: grid; gap: 8px; }
-  label { display: grid; gap: 3px; font-size: 13px; font-weight: 600; }
-  .row { display: flex; flex-wrap: wrap; gap: 6px; }
-  .hint { margin: 0; font-size: 12px; color: var(--muted); }
-  .error { color: var(--bad); margin: 0; }
-  .danger { color: var(--bad); }
+  .editor { display: grid; gap: 16px; }
+  .fieldset { display: grid; gap: 0; }
+  .fieldset input, .fieldset select { width: 100%; }
+  .mono { font-family: var(--mono); font-size: 12px; }
+  .hint { margin-top: 6px; }
+  .row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .split { justify-content: space-between; padding-top: 16px; border-top: 1px solid var(--border-soft); }
+  .spacer { flex: 1; }
+  .error { display: flex; gap: 6px; align-items: center; color: var(--bad); margin: 0; font-size: 12px; }
 </style>
