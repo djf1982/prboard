@@ -17,7 +17,7 @@ const open = (pr: PullRequestNode) => pr.state === undefined || pr.state === 'OP
 
 export const ACTIONS: ActionDef[] = [
   {
-    id: 'enableAutoMerge', label: 'Enable auto-merge',
+    id: 'enableAutoMerge', label: 'Enable auto-merge', icon: 'merge',
     description: 'GitHub merges the pull request when all requirements pass.',
     fragment: 'viewerCanEnableAutoMerge autoMergeRequest { mergeMethod } repository { squashMergeAllowed mergeCommitAllowed rebaseMergeAllowed }',
     available: (pr) => open(pr) && !!pr.viewerCanEnableAutoMerge && !pr.autoMergeRequest,
@@ -30,7 +30,7 @@ export const ACTIONS: ActionDef[] = [
     requires: [...WRITE],
   },
   {
-    id: 'disableAutoMerge', label: 'Disable auto-merge',
+    id: 'disableAutoMerge', label: 'Disable auto-merge', icon: 'x',
     description: 'Turns auto-merge off.',
     fragment: 'viewerCanDisableAutoMerge autoMergeRequest { mergeMethod }',
     available: (pr) => !!pr.viewerCanDisableAutoMerge && !!pr.autoMergeRequest,
@@ -41,7 +41,7 @@ export const ACTIONS: ActionDef[] = [
     requires: [...WRITE],
   },
   {
-    id: 'markReady', label: 'Mark ready for review',
+    id: 'markReady', label: 'Mark ready for review', icon: 'eye',
     description: 'Moves a draft out of draft state.',
     fragment: 'isDraft viewerCanUpdate',
     available: (pr) => open(pr) && !!pr.isDraft && !!pr.viewerCanUpdate,
@@ -52,7 +52,7 @@ export const ACTIONS: ActionDef[] = [
     requires: [...WRITE],
   },
   {
-    id: 'convertToDraft', label: 'Convert to draft',
+    id: 'convertToDraft', label: 'Convert to draft', icon: 'draft',
     description: 'Moves the pull request back to draft.',
     fragment: 'isDraft viewerCanUpdate',
     available: (pr) => open(pr) && pr.isDraft === false && !!pr.viewerCanUpdate,
@@ -63,7 +63,7 @@ export const ACTIONS: ActionDef[] = [
     requires: [...WRITE],
   },
   {
-    id: 'updateBranch', label: 'Update branch',
+    id: 'updateBranch', label: 'Update branch', icon: 'branch',
     description: 'Brings the head branch up to date with the base branch.',
     fragment: 'viewerCanUpdateBranch',
     available: (pr) => open(pr) && !!pr.viewerCanUpdateBranch,
@@ -76,7 +76,7 @@ export const ACTIONS: ActionDef[] = [
     requires: ['Contents: write'],
   },
   {
-    id: 'enqueue', label: 'Add to merge queue',
+    id: 'enqueue', label: 'Add to merge queue', icon: 'queue',
     description: 'Adds the pull request to the merge queue of its base branch.',
     // GitHub has no viewerCanEnqueue field. viewerCanUpdate is the closest signal; a failed mutation shows its error.
     fragment: 'isMergeQueueEnabled isInMergeQueue isDraft viewerCanUpdate',
@@ -89,7 +89,7 @@ export const ACTIONS: ActionDef[] = [
     requires: [...WRITE],
   },
   {
-    id: 'dequeue', label: 'Remove from merge queue',
+    id: 'dequeue', label: 'Remove from merge queue', icon: 'x',
     description: 'Takes the pull request out of the merge queue.',
     fragment: 'isInMergeQueue',
     available: (pr) => !!pr.isInMergeQueue,
@@ -100,7 +100,7 @@ export const ACTIONS: ActionDef[] = [
     requires: [...WRITE],
   },
   {
-    id: 'approve', label: 'Approve',
+    id: 'approve', label: 'Approve', icon: 'check',
     description: 'Submits an approving review with no comment.',
     fragment: 'viewerDidAuthor isDraft',
     available: (pr) => open(pr) && pr.viewerDidAuthor === false && pr.isDraft !== true,

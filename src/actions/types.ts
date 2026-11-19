@@ -1,5 +1,5 @@
 import type { PullRequestNode } from '../github/types';
-import type { Permission } from '../fields/types';
+import type { IconId, Permission } from '../fields/types';
 
 export interface ActionChoice {
   id: string;
@@ -9,6 +9,8 @@ export interface ActionChoice {
 export interface ActionDef {
   id: string;
   label: string;
+  /** Shown in the menu, before the label. */
+  icon?: IconId;
   description: string;
   /** GraphQL selection needed to decide whether the action applies. */
   fragment: string;
