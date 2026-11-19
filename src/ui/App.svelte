@@ -54,6 +54,18 @@
   $effect(() => { void store.config.refreshSeconds; data.reschedule(); });
   onDestroy(() => data.stop());
 
+  // The toolbar query is editable in place. Enter saves it to the view; Esc or leaving the box cancels.
+  let queryDraft = $state('');
+  let queryInput: HTMLInputElement | undefined = $state();
+  $effect(() => { queryDraft = view.query; });
+  const queryDirty = $derived(queryDraft.trim() !== view.query && queryDraft.trim() !== '');
+  function applyQuery() {
+    const q = queryDraft.trim();
+    if (!q) { queryDraft = view.query; return; }
+    if (q !== view.query) onViewChange((v) => { v.query = q; });
+    queryInput?.blur();
+  }
+
   function onViewChange(mutate: (v: ViewConfig) => void) {
     store.updateView(view.name, mutate);
   }
@@ -177,10 +189,19 @@
     <div class="body" class:with-panel={panel}>
       <section class="main">
         <div class="toolbar">
-          <div class="query" title={view.query}>
+          <form class="query" class:dirty={queryDirty} onsubmit={(e) => { e.preventDefault(); applyQuery(); }}>
             <Icon id="search" size={13} />
-            <code>{view.query}</code>
-          </div>
+            <input
+              bind:this={queryInput}
+              bind:value={queryDraft}
+              aria-label="Search query"
+              title={queryDirty ? 'Press Enter to search, or Esc to cancel' : view.query}
+              maxlength="1000" spellcheck="false" autocomplete="off"
+              onkeydown={(e) => { if (e.key === 'Escape') { queryDraft = view.query; queryInput?.blur(); } }}
+              onblur={() => { if (queryDirty) queryDraft = view.query; }}
+            />
+            {#if queryDirty}<kbd title="Press Enter to search">↵</kbd>{/if}
+          </form>
           {#if viewData.fetchedAt}<span class="found">{viewData.total.toLocaleString()} {viewData.total === 1 ? 'result' : 'results'}</span>{/if}
           <div class="spacer"></div>
           <div class="icon-group" role="group" aria-label="View tools">
@@ -326,7 +347,12 @@
   .toolbar { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; min-width: 0; }
   .query { display: inline-flex; align-items: center; gap: 8px; min-width: 0; height: 28px; padding: 0 10px; border-radius: var(--r-sm);
     background: var(--bg-raised); border: 1px solid var(--border); color: var(--muted); }
-  .query code { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; color: var(--fg-soft); }
+  .query { width: min(100%, 560px); flex: 0 1 auto; transition: border-color .12s, box-shadow .12s; }
+  .query:hover { border-color: var(--border-strong); }
+  .query:focus-within { border-color: var(--accent); box-shadow: var(--ring); }
+  .query input { all: unset; flex: 1; min-width: 0; font-family: var(--mono); font-size: 12px; color: var(--fg-soft); text-overflow: ellipsis; }
+  .query input:focus { color: var(--fg); }
+  .query kbd { flex: none; font: 11px/1 var(--font); color: var(--muted); padding: 3px 5px; border: 1px solid var(--border); border-radius: 4px; background: var(--bg-sunken); }
   .icon-group { display: inline-flex; gap: 2px; padding: 2px; border: 1px solid var(--border); border-radius: var(--r-md); background: var(--bg-raised); }
   .icon-group button { height: 24px; width: 26px; }
   .found { flex: none; color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
