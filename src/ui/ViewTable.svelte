@@ -238,7 +238,7 @@
                   onclick={header.column.getToggleSortingHandler()}
                 >
                   <span class="label-text">{col?.label ?? header.column.id}</span>
-                  {#if col?.cost === 'high'}<span class="cost" title="Expensive field: uses more API rate limit"><Icon id="gauge" size={12} /></span>{/if}
+                  {#if col?.cost === 'high'}<span class="cost" title="Expensive field: uses more API rate limit"><Icon id="gauge" size={13} /></span>{/if}
                   {#if sorted}
                     <span class="arrow"><Icon id={sorted === 'asc' ? 'arrow-up' : 'arrow-down'} size={11} />{#if view.sort.length > 1}<sub>{header.column.getSortIndex() + 1}</sub>{/if}</span>
                   {/if}

@@ -26,7 +26,7 @@
   function place(e: Event) {
     if ((e as ToggleEvent).newState !== 'open' || !trigger || !menu) return;
     const r = trigger.getBoundingClientRect();
-    const width = Math.max(menu.offsetWidth, 220);
+    const width = Math.max(menu.offsetWidth, 280);
     left = Math.max(8, Math.min(r.right - width, window.innerWidth - width - 8));
     const below = r.bottom + 4;
     top = below + menu.offsetHeight > window.innerHeight - 8 ? Math.max(8, r.top - menu.offsetHeight - 4) : below;
@@ -69,20 +69,31 @@
   </button>
   <div class="menu" id={menuId} popover="auto" bind:this={menu} ontoggle={place} style:top="{top}px" style:left="{left}px">
     <ul role="menu">
-      {#each actions as action (action.id)}
+      {#each actions as action, i (action.id)}
         {@const choices = action.choices?.(pr) ?? []}
+        {#if i > 0 && (choices.length > 1 || (actions[i - 1]?.choices?.(pr) ?? []).length > 1)}<li role="separator" class="sep"></li>{/if}
         {#if choices.length > 1}
-          <li role="none" class="group">
-            <span class="group-label">{action.label}</span>
-            <span class="choices">
-            {#each choices as c (c.id)}
-              <button role="menuitem" title={action.description} onclick={() => run(action, c.id)}>{c.label}</button>
-            {/each}
+          <li role="none" class="item group">
+            <span class="ico"><Icon id={action.icon ?? 'dot'} /></span>
+            <span class="body">
+              <span class="label">{action.label}</span>
+              <span class="desc">{action.description}</span>
+              <span class="seg" role="group" aria-label={action.label}>
+                {#each choices as c (c.id)}
+                  <button role="menuitem" title="{action.label}: {c.label}" onclick={() => run(action, c.id)}>{c.label}</button>
+                {/each}
+              </span>
             </span>
           </li>
         {:else}
           <li role="none">
-            <button role="menuitem" title={action.description} onclick={() => run(action, choices[0]?.id)}>{action.label}</button>
+            <button role="menuitem" class="item" onclick={() => run(action, choices[0]?.id)}>
+              <span class="ico"><Icon id={action.icon ?? 'dot'} /></span>
+              <span class="body">
+                <span class="label">{action.label}</span>
+                <span class="desc">{action.description}</span>
+              </span>
+            </button>
           </li>
         {/if}
       {/each}
@@ -101,19 +112,26 @@
   .spinner { width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--border-strong); border-top-color: var(--accent); animation: spin .7s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
   .menu { position: fixed; inset: auto; margin: 0; padding: 4px; background: var(--bg-raised); color: var(--fg); border: 1px solid var(--border);
-    border-radius: var(--r-md); box-shadow: var(--shadow); min-width: 220px; text-align: left; }
+    border-radius: var(--r-md); box-shadow: var(--shadow); width: 280px; text-align: left; }
   .menu:popover-open { animation: pop .14s var(--ease); }
   @keyframes pop { from { opacity: 0; transform: translateY(-4px) scale(.98); } }
-  ul { margin: 0; padding: 0; list-style: none; }
+  ul { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 1px; }
   li { display: block; }
-  li.group { padding: 6px 8px; }
-  li.group + li, li + li.group { border-top: 1px solid var(--border-soft); margin-top: 4px; padding-top: 8px; }
-  .group-label { display: block; font-size: 11px; font-weight: 500; color: var(--muted); margin-bottom: 6px; }
-  .choices { display: flex; flex-wrap: wrap; gap: 4px; }
-  li.group button { width: auto; height: 26px; padding: 0 10px; border: 1px solid var(--border); font-size: 12px; }
-  ul button { display: flex; width: 100%; justify-content: flex-start; height: 32px; background: none; border: 0; padding: 0 8px;
-    border-radius: var(--r-sm); font-weight: 400; color: var(--fg-soft); }
-  ul button:hover:not(:disabled) { background: var(--hover); color: var(--fg); border-color: var(--border); }
+  .sep { height: 1px; background: var(--border-soft); margin: 4px -4px; }
+  /* One row: icon, then the label with a short description under it. */
+  .item { display: flex; align-items: flex-start; gap: 10px; width: 100%; height: auto; padding: 7px 10px 7px 8px; text-align: left;
+    background: none; border: 0; border-radius: var(--r-sm); white-space: normal; font-weight: 400; color: var(--fg-soft); }
+  button.item:hover:not(:disabled), button.item:focus-visible { background: var(--hover); color: var(--fg); outline: none; }
+  button.item:hover .ico, button.item:focus-visible .ico { color: var(--fg); }
+  .ico { display: grid; place-items: center; width: 16px; height: 18px; flex: none; color: var(--muted); }
+  .body { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+  .label { font-size: 13px; font-weight: 500; line-height: 18px; color: var(--fg); }
+  .desc { font-size: 11.5px; line-height: 16px; color: var(--muted); }
+  /* Choices (for example merge methods) as one segmented control. */
+  .seg { display: flex; margin-top: 8px; border: 1px solid var(--border); border-radius: var(--r-sm); overflow: hidden; background: var(--bg-sunken); }
+  .seg button { flex: 1; height: 26px; padding: 0 8px; border: 0; border-radius: 0; background: transparent; font-size: 12px; font-weight: 500; color: var(--fg-soft); }
+  .seg button + button { border-left: 1px solid var(--border); }
+  .seg button:hover:not(:disabled), .seg button:focus-visible { background: var(--hover); color: var(--fg); outline: none; }
   .err { color: var(--bad); font-size: 12px; margin-left: 4px; }
   .muted { color: var(--faint); padding-right: 10px; }
 </style>
