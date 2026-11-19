@@ -151,7 +151,7 @@ The `actions` column is a registry in `src/actions/registry.ts`, the same shape 
 - Values go in GraphQL variables, never in the query text.
 - Pass `expectedHeadOid` (from `headRefOid`) when the mutation accepts it.
 - Gate on `viewerCan…` fields where GitHub has one. `enqueue` has none, so it uses `viewerCanUpdate` as an approximation.
-- v1 actions: enable/disable auto-merge, mark ready, convert to draft, update branch, enqueue/dequeue, approve.
+- v1 actions: merge, enable/disable auto-merge, mark ready, convert to draft, update branch, enqueue/dequeue, approve.
 - The token can stay read-only. Then the actions fail with a banner that names the missing permission.
 
 ## Auth

@@ -88,7 +88,7 @@ When an action fails because the token cannot write, a banner says which permiss
 | `mergeable` | Mergeable / conflicting / unknown | low | Pull requests: read |
 | `mergeQueue` | Position and state in the merge queue | low | Pull requests: read |
 | `unresolvedThreads` | Unresolved review threads (first 100 counted) | **high** | Pull requests: read |
-| `actions` | Buttons: enable/disable auto-merge, ready for review, convert to draft, update branch, add to/remove from merge queue, approve | low | Pull requests: read and write |
+| `actions` | Buttons: merge, enable/disable auto-merge, ready for review, convert to draft, update branch, add to/remove from merge queue, approve | low | Pull requests: read and write |
 
 "High cost" fields use more of the GraphQL rate limit (5,000 points per hour). The footer shows what is left.
 Permissions marked "unverified" are our best reading of GitHub's docs. Please open an issue if you test them with a minimal token.

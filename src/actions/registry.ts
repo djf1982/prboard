@@ -15,7 +15,27 @@ function mergeMethods(pr: PullRequestNode): ActionChoice[] {
 
 const open = (pr: PullRequestNode) => pr.state === undefined || pr.state === 'OPEN';
 
+/** Merge states in which GitHub lets the viewer merge now. UNSTABLE means only optional checks fail. */
+const MERGEABLE_NOW = new Set(['CLEAN', 'HAS_HOOKS', 'UNSTABLE']);
+
 export const ACTIONS: ActionDef[] = [
+  {
+    id: 'merge', label: 'Merge', icon: 'merge',
+    description: 'Merges the pull request now.',
+    // GitHub has no viewerCanMerge field. viewerCanUpdate is the closest signal; a failed mutation shows its error.
+    // GitHub does not offer auto-merge when a PR can merge now, so this action fills that gap.
+    fragment: 'isDraft mergeStateStatus isMergeQueueEnabled viewerCanUpdate autoMergeRequest { mergeMethod } repository { squashMergeAllowed mergeCommitAllowed rebaseMergeAllowed }',
+    available: (pr) =>
+      open(pr) && pr.isDraft === false && MERGEABLE_NOW.has(pr.mergeStateStatus ?? '')
+      && !pr.isMergeQueueEnabled && !pr.autoMergeRequest && !!pr.viewerCanUpdate,
+    choices: mergeMethods,
+    confirm: (pr, m) => `Merge ${label(pr)} now (${(m ?? 'SQUASH').toLowerCase()})?`,
+    mutation: (pr, m) => ({
+      query: 'mutation($id: ID!, $method: PullRequestMergeMethod, $oid: GitObjectID) { mergePullRequest(input: { pullRequestId: $id, mergeMethod: $method, expectedHeadOid: $oid }) { clientMutationId } }',
+      variables: { id: pr.id, method: m ?? 'SQUASH', oid: pr.headRefOid ?? null },
+    }),
+    requires: [...WRITE, 'Contents: write'],
+  },
   {
     id: 'enableAutoMerge', label: 'Enable auto-merge', icon: 'merge',
     description: 'GitHub merges the pull request when all requirements pass.',
