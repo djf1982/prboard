@@ -25,6 +25,17 @@ describe('actions', () => {
     expect(action('enableAutoMerge').choices!(pr).map((c) => c.id)).toEqual(['SQUASH', 'REBASE']);
   });
 
+  it('offers merge when the PR can merge now, and not when a queue or auto-merge applies', () => {
+    const ready = { ...auto!, autoMergeRequest: null, isMergeQueueEnabled: false, isDraft: false, mergeStateStatus: 'CLEAN', viewerCanUpdate: true };
+    expect(ids(ready)).toContain('merge');
+    expect(ids({ ...ready, mergeStateStatus: 'BLOCKED' })).not.toContain('merge');
+    expect(ids({ ...ready, isMergeQueueEnabled: true })).not.toContain('merge');
+    expect(ids({ ...ready, isDraft: true })).not.toContain('merge');
+    const m = action('merge').mutation(ready, 'MERGE');
+    expect(m.query).toContain('mergePullRequest');
+    expect(m.variables).toEqual({ id: ready.id, method: 'MERGE', oid: ready.headRefOid });
+  });
+
   it('puts values in variables and pins the head commit', () => {
     const m = action('enableAutoMerge').mutation(auto!, 'REBASE');
     expect(m.query).not.toContain(auto!.id);
@@ -34,7 +45,7 @@ describe('actions', () => {
   });
 
   it('asks for confirmation before anything that can merge or rewrite', () => {
-    for (const id of ['enableAutoMerge', 'enqueue', 'updateBranch', 'approve']) expect(action(id).confirm, id).toBeDefined();
+    for (const id of ['merge', 'enableAutoMerge', 'enqueue', 'updateBranch', 'approve']) expect(action(id).confirm, id).toBeDefined();
   });
 
   it('every action declares its permissions and fragment', () => {
