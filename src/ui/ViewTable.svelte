@@ -201,6 +201,8 @@
     return w;
   }
 
+  // The title shows the number after it, unless a number column already shows it.
+  const showsNumber = $derived(columns.some((c) => c.id === 'number' && !c.hidden));
   const visibleCount = $derived(columns.filter((c) => !c.hidden).length);
   const permissionHint = (req: string[]) => `Your token cannot read this. It needs: ${req.join(', ')}.`;
 </script>
@@ -236,7 +238,7 @@
                   onclick={header.column.getToggleSortingHandler()}
                 >
                   <span class="label-text">{col?.label ?? header.column.id}</span>
-                  {#if col?.cost === 'high'}<span class="cost" title="Expensive field: uses more API rate limit">$</span>{/if}
+                  {#if col?.cost === 'high'}<span class="cost" title="Expensive field: uses more API rate limit"><Icon id="gauge" size={12} /></span>{/if}
                   {#if sorted}
                     <span class="arrow"><Icon id={sorted === 'asc' ? 'arrow-up' : 'arrow-down'} size={11} />{#if view.sort.length > 1}<sub>{header.column.getSortIndex() + 1}</sub>{/if}</span>
                   {/if}
@@ -288,7 +290,7 @@
                 {:else}
                   {@const state = cellFor(col, row.original)}
                   {#if state.kind === 'value'}
-                    <CellView cell={state.cell} />
+                    <CellView cell={col.id === 'title' && showsNumber ? { ...state.cell, meta: undefined } : state.cell} />
                   {:else if state.kind === 'forbidden'}
                     <span class="forbidden" title={permissionHint(state.requires)}><Icon id="lock" size={12} /> no access</span>
                   {:else}
@@ -324,7 +326,7 @@
   .sr-label .label-text { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
   .arrow { display: inline-flex; align-items: center; color: var(--accent); flex: none; }
   .arrow sub { font-size: 9px; font-weight: 600; margin-left: 1px; }
-  .cost { color: var(--warn); font-weight: 600; font-size: 11px; flex: none; }
+  .cost { color: var(--warn); flex: none; display: inline-flex; align-items: center; }
   /* Hover tools float over the label, so they never take its space. */
   .tools { position: absolute; right: -2px; display: inline-flex; gap: 2px; padding-left: 16px; opacity: 0; pointer-events: none;
     background: linear-gradient(to right, transparent, var(--bg-head) 12px); transition: opacity .12s; }
